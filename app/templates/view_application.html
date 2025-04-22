@@ -189,10 +189,16 @@
     <div class="rounded-lg border border-gray-800 bg-gray-900/50 overflow-hidden mb-6">
         <div class="px-6 py-4 border-b border-gray-800 flex justify-between items-center">
             <h2 class="text-xl font-semibold">Registro de Eventos</h2>
-            <a href="/api/applications/{{ application.id }}/logs" class="px-3 py-1 rounded-md border border-gray-700 hover:bg-gray-800 text-gray-300 flex items-center gap-2 transition-colors">
-                <i data-lucide="download" class="w-4 h-4"></i>
-                <span>JSON</span>
-            </a>
+            <div class="flex gap-2">
+                <a href="/api/applications/{{ application.id }}/logs/download?format=csv" class="px-3 py-1 rounded-md border border-gray-700 hover:bg-gray-800 text-gray-300 flex items-center gap-2 transition-colors">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    <span>CSV</span>
+                </a>
+                <a href="/api/applications/{{ application.id }}/logs/download?format=json" class="px-3 py-1 rounded-md border border-gray-700 hover:bg-gray-800 text-gray-300 flex items-center gap-2 transition-colors">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    <span>JSON</span>
+                </a>
+            </div>
         </div>
         <div class="overflow-x-auto">
             {% if logs %}
@@ -233,6 +239,58 @@
                 <p class="text-gray-400">Los eventos aparecerán aquí cuando inicies la aplicación</p>
             </div>
             {% endif %}
+        </div>
+    </div>
+    
+    <!-- Logs de salida de la aplicación -->
+    <div class="rounded-lg border border-gray-800 bg-gray-900/50 overflow-hidden mb-6">
+        <div class="px-6 py-4 border-b border-gray-800">
+            <h2 class="text-xl font-semibold">Logs de Salida de la Aplicación</h2>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- stdout.log -->
+                <div class="p-4 rounded-lg border border-gray-800 bg-gray-900/30">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="text-lg font-medium flex items-center gap-2">
+                            <i data-lucide="terminal" class="w-5 h-5 text-blue-400"></i>
+                            <span>Salida Estándar (stdout)</span>
+                        </h3>
+                        <a href="/api/applications/{{ application.id }}/output-logs/download?log_type=stdout" 
+                           class="px-3 py-1 rounded-md bg-blue-900/20 hover:bg-blue-900/30 text-blue-400 border border-blue-900/20 flex items-center gap-2 transition-colors">
+                            <i data-lucide="download" class="w-4 h-4"></i>
+                            <span>Descargar</span>
+                        </a>
+                    </div>
+                    <p class="text-sm text-gray-400 mb-2">
+                        Contiene los mensajes y output normal de la aplicación.
+                    </p>
+                    <div class="bg-gray-800 p-2 rounded text-xs text-gray-300 font-mono">
+                        {{ application.directory }}/logs/stdout.log
+                    </div>
+                </div>
+                
+                <!-- stderr.log -->
+                <div class="p-4 rounded-lg border border-gray-800 bg-gray-900/30">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="text-lg font-medium flex items-center gap-2">
+                            <i data-lucide="alert-triangle" class="w-5 h-5 text-red-400"></i>
+                            <span>Salida de Error (stderr)</span>
+                        </h3>
+                        <a href="/api/applications/{{ application.id }}/output-logs/download?log_type=stderr" 
+                           class="px-3 py-1 rounded-md bg-red-900/20 hover:bg-red-900/30 text-red-400 border border-red-900/20 flex items-center gap-2 transition-colors">
+                            <i data-lucide="download" class="w-4 h-4"></i>
+                            <span>Descargar</span>
+                        </a>
+                    </div>
+                    <p class="text-sm text-gray-400 mb-2">
+                        Contiene mensajes de error, excepciones y advertencias.
+                    </p>
+                    <div class="bg-gray-800 p-2 rounded text-xs text-gray-300 font-mono">
+                        {{ application.directory }}/logs/stderr.log
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

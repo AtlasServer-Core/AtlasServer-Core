@@ -3,11 +3,15 @@
 from fastapi import FastAPI, Depends, HTTPException, Request, Form
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
 from starlette.middleware.sessions import SessionMiddleware
 from sqlalchemy.orm import Session
 import os
 import json
+import tempfile
+import csv
+import io
+from starlette.background import BackgroundTask
 import uvicorn
 from pydantic import BaseModel
 from typing import Optional, List
@@ -285,19 +289,91 @@ def restart_application(app_id: int, current_user: User = Depends(login_required
     
     return {"message": "Aplicación reiniciada correctamente"}
 
-@app.get("/api/applications/{app_id}/logs", response_model=List[LogResponse])
-def get_application_logs(app_id: int, limit: int = 100, current_user: User = Depends(login_required), db: Session = Depends(get_db)):
-    logs = db.query(Log).filter(Log.application_id == app_id).order_by(Log.timestamp.desc()).limit(limit).all()
-    response_logs = []
-    for log in logs:
-        response_logs.append({
-            "id": log.id,
-            "message": log.message,
-            "level": log.level,
-            "timestamp": log.timestamp.strftime("%Y-%m-%d %H:%M:%S")  # Convertir datetime a string
-        })
+@app.get("/api/applications/{app_id}/logs/download")
+def download_application_logs(
+    app_id: int, 
+    format: str = "csv", 
+    current_user: User = Depends(login_required), 
+    db: Session = Depends(get_db)
+):
+    logs = db.query(Log).filter(Log.application_id == app_id).order_by(Log.timestamp.desc()).all()
     
-    return response_logs
+    application = db.query(Application).filter(Application.id == app_id).first()
+    if not application:
+        raise HTTPException(status_code=404, detail="Aplicación no encontrada")
+    
+    filename = f"{application.name}_logs_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    
+    if format.lower() == "json":
+        # Crear archivo JSON para descargar
+        logs_data = []
+        for log in logs:
+            logs_data.append({
+                "id": log.id,
+                "message": log.message,
+                "level": log.level,
+                "timestamp": log.timestamp.strftime("%Y-%m-%d %H:%M:%S")
+            })
+        
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".json")
+        with open(temp_file.name, "w", encoding="utf-8") as f:
+            json.dump(logs_data, f, indent=2, ensure_ascii=False)
+        
+        return FileResponse(
+            path=temp_file.name, 
+            filename=f"{filename}.json",
+            media_type="application/json",
+            background=BackgroundTask(lambda: os.unlink(temp_file.name))
+        )
+    
+    else:  # CSV por defecto
+        # Crear archivo CSV para descargar
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(["ID", "Fecha", "Nivel", "Mensaje"])
+        
+        for log in logs:
+            writer.writerow([
+                log.id,
+                log.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+                log.level,
+                log.message
+            ])
+        
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".csv")
+        with open(temp_file.name, "w", encoding="utf-8") as f:
+            f.write(output.getvalue())
+        
+        return FileResponse(
+            path=temp_file.name, 
+            filename=f"{filename}.csv",
+            media_type="text/csv",
+            background=BackgroundTask(lambda: os.unlink(temp_file.name))
+        )
+
+
+@app.get("/api/applications/{app_id}/output-logs/download")
+def download_application_output_logs(
+    app_id: int, 
+    log_type: str = "stdout", 
+    current_user: User = Depends(login_required), 
+    db: Session = Depends(get_db)
+):
+    application = db.query(Application).filter(Application.id == app_id).first()
+    if not application:
+        raise HTTPException(status_code=404, detail="Aplicación no encontrada")
+    
+    log_file = os.path.join(application.directory, "logs", f"{log_type}.log")
+    if not os.path.exists(log_file):
+        raise HTTPException(status_code=404, detail=f"Archivo de logs {log_type}.log no encontrado")
+    
+    filename = f"{application.name}_{log_type}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+    
+    return FileResponse(
+        path=log_file,
+        filename=filename,
+        media_type="text/plain"
+    )
 
 # Rutas de la interfaz web
 @app.get("/", response_class=HTMLResponse)
@@ -670,4 +746,4 @@ app.add_middleware(
 
 
 if __name__ == "__main__":
-    uvicorn.run("app.main:app", host="127.0.0.1", port=5000, reload=True)
+    uvicorn.run("app.main:app", host="0.0.0.0", port=5000, reload=True)
