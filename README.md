@@ -1,10 +1,25 @@
-<h1 align="center">AtlasServer-Core</h1>
-
+<!-- Hero Section -->
 <div align="center">
-  <img src="app/static/svg/atlas.svg" alt="AtlasServer Logo" width="200"/>
+
+  <!-- Logo -->
+  <img src="app/static/svg/atlas.svg" alt="AtlasServer Logo" width="200" />
+
+  <!-- Main Title -->
+  <h1 style="margin-top: 0.5em; font-size: 3rem; color: #2d3748;">
+    AtlasServer‑Core
+  </h1>
+
+  <!-- Tagline -->
+  <p style="font-size: 1.25rem; color: #4a5568; line-height: 1.5;">
+    💻 <strong>Fast deploy. No cloud. Just code.</strong><br />
+    <em>From developers to developers.</em>
+  </p>
+
+  <!-- Divider -->
+  <hr style="width: 50px; border: 2px solid #2d3748; margin: 1.5em auto;" />
+
 </div>
 
-<p align="center">💻 Fast deploy. No cloud. Just code. From developers to developers.</p>
 
 ---
 
