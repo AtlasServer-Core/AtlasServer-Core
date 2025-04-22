@@ -2,7 +2,15 @@
 <div align="center">
 
   <!-- Logo -->
-  <img src="app/static/svg/atlas.svg" alt="AtlasServer Logo" width="200" />
+  <div align="center" style="background-color: #000; padding: 1em; display: inline-block; border-radius: 8px;">
+    <img
+      src="app/static/svg/atlas.svg"
+      alt="AtlasServer Logo"
+      width="200"
+      style="display: block;"
+    />
+  </div>
+
 
   <!-- Main Title -->
   <h1 style="margin-top: 0.5em; font-size: 3rem; color: #2d3748;">
