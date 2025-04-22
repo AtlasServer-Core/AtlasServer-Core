@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}AtlasServer - Configuración{% endblock %}
+{% block header_title %}Configuración{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="mb-8">
+        <h1 class="text-4xl font-bold mb-2">Configuración del Sistema</h1>
+        <p class="text-xl text-gray-400">Administra la configuración global de AtlasServer</p>
+    </div>
+
+    <!-- Nueva sección de configuración de usuarios -->
+    <div class="rounded-lg border border-gray-800 bg-gray-900/50 overflow-hidden mb-6">
+        <div class="px-6 py-4 border-b border-gray-800">
+            <h2 class="text-xl font-semibold">Configuración de Usuarios</h2>
+        </div>
+        <div class="p-6">
+            {% if user_success_message %}
+            <div class="mb-6 p-4 rounded-md bg-green-500/10 border border-green-500/30 text-green-400 flex gap-3 items-start">
+                <i data-lucide="check-circle" class="w-5 h-5 flex-shrink-0 mt-0.5"></i>
+                <div>
+                    <p>{{ user_success_message }}</p>
+                </div>
+            </div>
+            {% endif %}
+            
+            <form action="/config/users" method="post">
+                <div class="space-y-4">
+                    <div class="flex items-center gap-2 mb-4">
+                        <input 
+                            type="checkbox" 
+                            id="allow_registration" 
+                            name="allow_registration" 
+                            class="h-4 w-4 rounded bg-gray-800 border-gray-700 text-blue-600 focus:ring-blue-500"
+                            {% if registration_open %}checked{% endif %}
+                        >
+                        <div>
+                            <label for="allow_registration" class="text-sm font-medium text-gray-300">
+                                Permitir registro de nuevos usuarios
+                            </label>
+                            <p class="text-xs text-gray-400">
+                                Si está habilitado, cualquier persona podrá crear una cuenta en AtlasServer.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center gap-2">
+                        <i data-lucide="save" class="w-4 h-4"></i>
+                        <span>Guardar Configuración</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Sección de configuración de ngrok -->
+    <div class="rounded-lg border border-gray-800 bg-gray-900/50 overflow-hidden mb-6">
+        <div class="px-6 py-4 border-b border-gray-800">
+            <h2 class="text-xl font-semibold">Configuración de ngrok</h2>
+        </div>
+        <div class="p-6">
+            {% if success_message %}
+            <div class="mb-6 p-4 rounded-md bg-green-500/10 border border-green-500/30 text-green-400 flex gap-3 items-start">
+                <i data-lucide="check-circle" class="w-5 h-5 flex-shrink-0 mt-0.5"></i>
+                <div>
+                    <p>{{ success_message }}</p>
+                </div>
+            </div>
+            {% endif %}
+            
+            <form action="/config/ngrok" method="post">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300">Token de Autenticación ngrok</label>
+                        <input 
+                            type="password" 
+                            class="w-full px-4 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none" 
+                            name="ngrok_token" 
+                            value="{{ ngrok_token if ngrok_token else '' }}"
+                        >
+                        <p class="text-xs text-gray-400 mt-1">Obtén tu token en <a href="https://dashboard.ngrok.com/get-started/your-authtoken" target="_blank" class="text-blue-400 hover:underline">dashboard.ngrok.com</a></p>
+                    </div>
+                    <button type="submit" class="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center gap-2">
+                        <i data-lucide="save" class="w-4 h-4"></i>
+                        <span>Guardar Token</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Sección de configuración de red -->
+    <div class="rounded-lg border border-gray-800 bg-gray-900/50 overflow-hidden mb-6">
+        <div class="px-6 py-4 border-b border-gray-800">
+            <h2 class="text-xl font-semibold">Configuración de Red</h2>
+        </div>
+        <div class="p-6">
+            <div class="mb-4">
+                <h3 class="text-lg font-medium mb-2">Direcciones IP del Servidor</h3>
+                <div class="bg-gray-800 rounded-md p-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="p-3 border border-gray-700 rounded-md">
+                            <p class="text-sm text-gray-400 mb-1">IP Local (LAN):</p>
+                            <p class="font-mono text-white">{{ local_ip }}</p>
+                        </div>
+                        <div class="p-3 border border-gray-700 rounded-md">
+                            <p class="text-sm text-gray-400 mb-1">IP de Loopback:</p>
+                            <p class="font-mono text-white">127.0.0.1</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <h3 class="text-lg font-medium mb-2">Configuración del Servidor AtlasServer</h3>
+                <p class="text-gray-400 mb-4">El panel AtlasServer está corriendo en el puerto <span class="font-mono text-white">{{ server_port }}</span></p>
+                
+                <div class="flex flex-wrap gap-2">
+                    <a href="http://localhost:{{ server_port }}" target="_blank" class="px-3 py-1 rounded-md bg-gray-800 hover:bg-gray-700 text-white transition-colors flex items-center gap-2">
+                        <i data-lucide="link" class="w-4 h-4"></i>
+                        <span>localhost:{{ server_port }}</span>
+                    </a>
+                    
+                    <a href="http://{{ local_ip }}:{{ server_port }}" target="_blank" class="px-3 py-1 rounded-md bg-gray-800 hover:bg-gray-700 text-white transition-colors flex items-center gap-2">
+                        <i data-lucide="network" class="w-4 h-4"></i>
+                        <span>{{ local_ip }}:{{ server_port }}</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

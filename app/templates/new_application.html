@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+
+{% block title %}AtlasServer - Nueva Aplicación{% endblock %}
+{% block header_title %}Nueva Aplicación{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="mb-8">
+        <h1 class="text-4xl font-bold mb-2">Registrar Nueva Aplicación</h1>
+        <p class="text-xl text-gray-400">Completa el formulario para registrar una nueva aplicación Flask o FastAPI.</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2">
+            <div class="rounded-lg border border-gray-800 bg-gray-900/50 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-800">
+                    <h2 class="text-xl font-semibold">Información de la Aplicación</h2>
+                </div>
+                
+                <div class="p-6">
+                    {% if error %}
+                    <div class="mb-6 p-4 rounded-md bg-red-500/10 border border-red-500/30 text-red-400 flex gap-3 items-start">
+                        <i data-lucide="alert-triangle" class="w-5 h-5 flex-shrink-0 mt-0.5"></i>
+                        <div>
+                            <p>{{ error }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <form action="/applications/new" method="post" class="space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-2">
+                                <label for="name" class="block text-sm font-medium text-gray-300">Nombre de la Aplicación</label>
+                                <input 
+                                    type="text" 
+                                    class="w-full px-4 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none" 
+                                    id="name" 
+                                    name="name" 
+                                    required
+                                    value="{{ form_data.name if form_data else '' }}"
+                                >
+                                <p class="text-xs text-gray-400">Un nombre descriptivo para identificar la aplicación.</p>
+                            </div>
+                            
+                            <div class="space-y-2">
+                                <label for="app_type" class="block text-sm font-medium text-gray-300">Tipo de Aplicación</label>
+                                <select 
+                                    class="w-full px-4 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none" 
+                                    id="app_type" 
+                                    name="app_type" 
+                                    required
+                                >
+                                    <option value="" disabled {% if not form_data or not form_data.app_type %}selected{% endif %}>Selecciona un tipo</option>
+                                    <option value="flask" {% if form_data and form_data.app_type == 'flask' %}selected{% endif %}>Flask (Waitress)</option>
+                                    <option value="fastapi" {% if form_data and form_data.app_type == 'fastapi' %}selected{% endif %}>FastAPI (Uvicorn)</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-2">
+                            <label for="directory" class="block text-sm font-medium text-gray-300">Directorio de la Aplicación</label>
+                            <input 
+                                type="text" 
+                                class="w-full px-4 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none" 
+                                id="directory" 
+                                name="directory" 
+                                required
+                                value="{{ form_data.directory if form_data else '' }}"
+                            >
+                            <p class="text-xs text-gray-400">Ruta absoluta al directorio de la aplicación (ej: C:\proyectos\mi-app).</p>
+                        </div>
+                        
+                        <div class="space-y-2">
+                            <label for="main_file" class="block text-sm font-medium text-gray-300">Archivo Principal</label>
+                            <input 
+                                type="text" 
+                                class="w-full px-4 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none" 
+                                id="main_file" 
+                                name="main_file" 
+                                required
+                                value="{{ form_data.main_file if form_data else '' }}"
+                            >
+                            <p class="text-xs text-gray-400">Nombre del archivo principal relativo al directorio (ej: app.py).</p>
+                        </div>
+                        
+                        <div class="space-y-2">
+                            <label for="port" class="block text-sm font-medium text-gray-300">Puerto (opcional)</label>
+                            <input 
+                                type="number" 
+                                class="w-full px-4 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none" 
+                                id="port" 
+                                name="port" 
+                                min="1024" 
+                                max="65535"
+                                value="{{ form_data.port if form_data else '' }}"
+                            >
+                            <p class="text-xs text-gray-400">Si se deja vacío, se asignará automáticamente un puerto disponible.</p>
+                        </div>
+                        
+                        <div class="flex justify-end space-x-4 pt-4">
+                            <a href="/" class="px-4 py-2 rounded-md border border-gray-700 text-gray-300 hover:bg-gray-800 transition-colors flex items-center gap-2">
+                                <i data-lucide="x" class="w-4 h-4"></i>
+                                <span>Cancelar</span>
+                            </a>
+                            <button type="submit" class="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center gap-2">
+                                <i data-lucide="save" class="w-4 h-4"></i>
+                                <span>Registrar Aplicación</span>
+                            </button>
+                        </div>
+                        <div class="border-t border-gray-800 pt-6 mt-6">
+                            <h3 class="text-lg font-medium mb-4">Opciones Avanzadas</h3>
+                            
+                            <div class="flex items-center gap-2 mt-4">
+                                <input 
+                                    type="checkbox" 
+                                    id="ngrok_enabled" 
+                                    name="ngrok_enabled" 
+                                    class="h-4 w-4 rounded bg-gray-800 border-gray-700 text-blue-600 focus:ring-blue-500"
+                                    {% if form_data and form_data.ngrok_enabled %}checked{% endif %}
+                                >
+                                <div>
+                                    <label for="ngrok_enabled" class="text-sm font-medium text-gray-300">
+                                        Exponer a Internet con ngrok
+                                    </label>
+                                    <p class="text-xs text-gray-400">
+                                        Crea un túnel seguro para acceder a esta aplicación desde Internet.
+                                        <a href="/config" class="text-blue-400 hover:underline">Configurar token ngrok</a>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="space-y-6">
+            <!-- Información sobre tipos -->
+            <div class="rounded-lg border border-gray-800 bg-gray-900/50 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-800 bg-blue-900/20">
+                    <h2 class="text-lg font-semibold text-blue-400">Información sobre Tipos</h2>
+                </div>
+                <div class="p-6 space-y-6">
+                    <div>
+                        <div class="flex items-center gap-2 mb-2">
+                            <i data-lucide="info" class="w-5 h-5 text-blue-400"></i>
+                            <h3 class="font-medium">Flask con Waitress</h3>
+                        </div>
+                        <p class="text-sm text-gray-400 mb-2">Para aplicaciones Flask, el archivo principal debe contener una variable llamada <code>app</code>:</p>
+                        <pre class="code-block"><code>from flask import Flask
+app = Flask(__name__)</code></pre>
+                    </div>
+                    
+                    <div>
+                        <div class="flex items-center gap-2 mb-2">
+                            <i data-lucide="info" class="w-5 h-5 text-green-400"></i>
+                            <h3 class="font-medium">FastAPI con Uvicorn</h3>
+                        </div>
+                        <p class="text-sm text-gray-400 mb-2">Para aplicaciones FastAPI, el archivo principal debe contener una variable llamada <code>app</code>:</p>
+                        <pre class="code-block"><code>from fastapi import FastAPI
+app = FastAPI()</code></pre>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Consejos -->
+            <div class="rounded-lg border border-gray-800 bg-gray-900/50 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-800 bg-purple-900/20">
+                    <h2 class="text-lg font-semibold text-purple-400">Consejos</h2>
+                </div>
+                <div class="p-6">
+                    <ul class="space-y-4">
+                        <li class="flex gap-3">
+                            <i data-lucide="check-circle" class="w-5 h-5 text-green-400 flex-shrink-0"></i>
+                            <span class="text-sm text-gray-300">Asegúrate de que los archivos y directorios existan antes de registrar la aplicación.</span>
+                        </li>
+                        <li class="flex gap-3">
+                            <i data-lucide="check-circle" class="w-5 h-5 text-green-400 flex-shrink-0"></i>
+                            <span class="text-sm text-gray-300">Verifica que todas las dependencias estén instaladas para tu aplicación.</span>
+                        </li>
+                        <li class="flex gap-3">
+                            <i data-lucide="check-circle" class="w-5 h-5 text-green-400 flex-shrink-0"></i>
+                            <span class="text-sm text-gray-300">Si la aplicación requiere variables de entorno, configúralas manualmente en el sistema.</span>
+                        </li>
+                        <li class="flex gap-3">
+                            <i data-lucide="check-circle" class="w-5 h-5 text-green-400 flex-shrink-0"></i>
+                            <span class="text-sm text-gray-300">Los puertos entre 1024 y 65535 están disponibles para su uso.</span>
+                        </li>
+                        <li class="flex gap-3">
+                            <i data-lucide="check-circle" class="w-5 h-5 text-green-400 flex-shrink-0"></i>
+                            <span class="text-sm text-gray-300">Evita usar Emojis en print o logging, para asegurar un deploy seguro.</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Validación del formulario
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('form');
+        
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                
+                // Resaltar campos inválidos
+                const invalidInputs = form.querySelectorAll(':invalid');
+                invalidInputs.forEach(input => {
+                    input.classList.add('border-red-500', 'ring-red-500');
+                    
+                    // Añadir mensaje de error si no existe
+                    const parent = input.parentElement;
+                    if (!parent.querySelector('.error-message')) {
+                        const errorMsg = document.createElement('p');
+                        errorMsg.className = 'text-xs text-red-400 mt-1 error-message';
+                        errorMsg.textContent = input.validationMessage || 'Este campo es requerido';
+                        parent.appendChild(errorMsg);
+                    }
+                });
+            }
+        });
+        
+        // Limpiar errores cuando se interactúa con el campo
+        const inputs = form.querySelectorAll('input, select');
+        inputs.forEach(input => {
+            input.addEventListener('input', function() {
+                this.classList.remove('border-red-500', 'ring-red-500');
+                const errorMsg = this.parentElement.querySelector('.error-message');
+                if (errorMsg) {
+                    errorMsg.remove();
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

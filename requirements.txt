@@ -1,0 +1,13 @@
+Flask
+Werkzeug
+Jinja2
+bcrypt==4.0.1 # Este es para evitar errores que tiene las versiones más nuevas de bcrypt
+passlib
+fastapi
+uvicorn
+waitress
+sqlalchemy
+psutil
+pydantic
+python-multipart
+pyngrok

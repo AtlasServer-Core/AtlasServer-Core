@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AtlasServer - Login</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="icon" href="/static/svg/atlas.svg" />
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #000000;
+            color: #ffffff;
+        }
+        
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .logo-icon {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #2563eb;
+            color: white;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 24px;
+            margin-bottom: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Fondo -->
+    <div class="fixed inset-0 -z-10"></div>
+    
+    <!-- Contenedor principal -->
+    <div class="login-container">
+        <div class="w-full max-w-md mx-4">
+            <!-- Formulario de login -->
+            <div class="p-8 rounded-xl bg-gray-900/50 border border-gray-800 backdrop-blur shadow-2xl">
+                <div class="flex flex-col items-center mb-8">
+                    <div class="logo-icon">AS</div>
+                    <h1 class="text-3xl font-bold text-center">AtlasServer</h1>
+                    <p class="text-gray-400 mt-2">Iniciar sesión para continuar</p>
+                </div>
+                
+                {% if error %}
+                <div class="mb-6 p-4 rounded-md bg-red-500/10 border border-red-500/30 text-red-400 flex gap-3 items-start">
+                    <i data-lucide="alert-triangle" class="w-5 h-5 flex-shrink-0 mt-0.5"></i>
+                    <div>
+                        <p>{{ error }}</p>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <form action="/login" method="post" class="space-y-6">
+                    <div class="space-y-2">
+                        <label for="username" class="block text-sm font-medium text-gray-300">Usuario</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i data-lucide="user" class="w-5 h-5 text-gray-500"></i>
+                            </div>
+                            <input 
+                                type="text" 
+                                id="username" 
+                                name="username" 
+                                class="pl-10 w-full px-4 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none" 
+                                placeholder="Tu nombre de usuario" 
+                                required
+                            >
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-2">
+                        <label for="password" class="block text-sm font-medium text-gray-300">Contraseña</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i data-lucide="lock" class="w-5 h-5 text-gray-500"></i>
+                            </div>
+                            <input 
+                                type="password" 
+                                id="password" 
+                                name="password" 
+                                class="pl-10 w-full px-4 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none" 
+                                placeholder="Tu contraseña" 
+                                required
+                            >
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="w-full px-4 py-3 rounded-md bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center justify-center gap-2">
+                        <i data-lucide="log-in" class="w-5 h-5"></i>
+                        <span>Iniciar Sesión</span>
+                    </button>
+                </form>
+                
+                {% if registration_open %}
+                <div class="mt-6 text-center text-sm text-gray-400">
+                    <p>¿No tienes cuenta? <a href="/register" class="text-blue-400 hover:underline">Registrarse</a></p>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="mt-8 text-center text-sm text-gray-500">
+                <p>© AtlasServer 2025</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Javascript -->
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>

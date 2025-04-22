@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+
+{% block title %}AtlasServer - {{ application.name }}{% endblock %}
+{% block header_title %}Detalles de Aplicación{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-3">
+                <h1 class="text-3xl font-bold">{{ application.name }}</h1>
+                {% if application.status == "running" %}
+                <span class="px-3 py-1 rounded-full bg-green-500/10 text-green-400 text-sm border border-green-500/20 flex items-center gap-2">
+                    <span class="status-indicator running"></span>
+                    Ejecutando
+                </span>
+                {% elif application.status == "stopped" %}
+                <span class="px-3 py-1 rounded-full bg-gray-500/10 text-gray-400 text-sm border border-gray-500/20 flex items-center gap-2">
+                    <span class="status-indicator stopped"></span>
+                    Detenido
+                </span>
+                {% elif application.status == "error" %}
+                <span class="px-3 py-1 rounded-full bg-red-500/10 text-red-400 text-sm border border-red-500/20 flex items-center gap-2">
+                    <span class="status-indicator error"></span>
+                    Error
+                </span>
+                {% else %}
+                <span class="px-3 py-1 rounded-full bg-yellow-500/10 text-yellow-400 text-sm border border-yellow-500/20 flex items-center gap-2">
+                    <span class="status-indicator unknown"></span>
+                    {{ application.status }}
+                </span>
+                {% endif %}
+            </div>
+            <div class="mt-2 flex flex-wrap gap-2 items-center">
+                {% if application.app_type == "flask" %}
+                <span class="px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 text-sm border border-blue-500/20">Flask (Waitress)</span>
+                {% elif application.app_type == "fastapi" %}
+                <span class="px-3 py-1 rounded-full bg-green-500/10 text-green-400 text-sm border border-green-500/20">FastAPI (Uvicorn)</span>
+                {% else %}
+                <span class="px-3 py-1 rounded-full bg-gray-500/10 text-gray-400 text-sm border border-gray-500/20">{{ application.app_type }}</span>
+                {% endif %}
+                <span class="text-gray-400">Puerto: {{ application.port or 'No asignado' }}</span>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-3">
+            {% if application.status == "running" %}
+            <form action="/applications/{{ application.id }}/stop" method="post">
+                <button type="submit" class="px-4 py-2 rounded-md bg-yellow-700/20 hover:bg-yellow-700/30 text-yellow-400 border border-yellow-700/30 transition-colors flex items-center gap-2">
+                    <i data-lucide="square" class="w-5 h-5"></i>
+                    <span>Detener</span>
+                </button>
+            </form>
+            <form action="/applications/{{ application.id }}/restart" method="post">
+                <button type="submit" class="px-4 py-2 rounded-md bg-blue-700/20 hover:bg-blue-700/30 text-blue-400 border border-blue-700/30 transition-colors flex items-center gap-2">
+                    <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                    <span>Reiniciar</span>
+                </button>
+            </form>
+            {% elif application.status in ["stopped", "error"] %}
+            <form action="/applications/{{ application.id }}/start" method="post">
+                <button type="submit" class="px-4 py-2 rounded-md bg-green-700/20 hover:bg-green-700/30 text-green-400 border border-green-700/30 transition-colors flex items-center gap-2">
+                    <i data-lucide="play" class="w-5 h-5"></i>
+                    <span>Iniciar</span>
+                </button>
+            </form>
+            {% endif %}
+            <button type="button" 
+                   onclick="document.getElementById('deleteModal').classList.remove('hidden')"
+                   class="px-4 py-2 rounded-md bg-red-700/20 hover:bg-red-700/30 text-red-400 border border-red-700/30 transition-colors flex items-center gap-2">
+                <i data-lucide="trash-2" class="w-5 h-5"></i>
+                <span>Eliminar</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <!-- Información de la aplicación -->
+        <div class="rounded-lg border border-gray-800 bg-gray-900/50 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-800">
+                <h2 class="text-xl font-semibold">Información</h2>
+            </div>
+            <div class="p-6">
+                <dl class="grid grid-cols-1 gap-4">
+                    <div class="grid grid-cols-3 gap-4 py-2 border-b border-gray-800">
+                        <dt class="font-medium text-gray-400">Estado:</dt>
+                        <dd class="col-span-2 text-white">
+                            {% if application.status == "running" %}
+                            <span class="px-3 py-1 rounded-full bg-green-500/10 text-green-400 text-sm border border-green-500/20">Ejecutando</span>
+                            {% elif application.status == "stopped" %}
+                            <span class="px-3 py-1 rounded-full bg-gray-500/10 text-gray-400 text-sm border border-gray-500/20">Detenido</span>
+                            {% elif application.status == "error" %}
+                            <span class="px-3 py-1 rounded-full bg-red-500/10 text-red-400 text-sm border border-red-500/20">Error</span>
+                            {% else %}
+                            <span class="px-3 py-1 rounded-full bg-yellow-500/10 text-yellow-400 text-sm border border-yellow-500/20">{{ application.status }}</span>
+                            {% endif %}
+                        </dd>
+                    </div>
+                    
+                    <div class="grid grid-cols-3 gap-4 py-2 border-b border-gray-800">
+                        <dt class="font-medium text-gray-400">PID:</dt>
+                        <dd class="col-span-2 text-white">{{ application.pid or 'N/A' }}</dd>
+                    </div>
+                    
+                    <div class="grid grid-cols-3 gap-4 py-2 border-b border-gray-800">
+                        <dt class="font-medium text-gray-400">Directorio:</dt>
+                        <dd class="col-span-2">
+                            <div class="bg-gray-800 p-2 rounded-md overflow-x-auto font-mono text-sm text-gray-300">
+                                {{ application.directory }}
+                            </div>
+                        </dd>
+                    </div>
+                    
+                    <div class="grid grid-cols-3 gap-4 py-2 border-b border-gray-800">
+                        <dt class="font-medium text-gray-400">Archivo Principal:</dt>
+                        <dd class="col-span-2 text-white font-mono">{{ application.main_file }}</dd>
+                    </div>
+                    
+                    <div class="grid grid-cols-3 gap-4 py-2 border-b border-gray-800">
+                        <dt class="font-medium text-gray-400">Creado:</dt>
+                        <dd class="col-span-2 text-white">{{ application.created_at.strftime('%d/%m/%Y %H:%M:%S') }}</dd>
+                    </div>
+                    
+                    {% if application.status == "running" %}
+                    <div class="grid grid-cols-3 gap-4 py-2 border-b border-gray-800">
+                        <dt class="font-medium text-gray-400">URL LAN:</dt>
+                        <dd class="col-span-2">
+                            <a href="http://{{ local_ip }}:{{ application.port }}" target="_blank" class="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-green-900/20 hover:bg-green-900/30 text-green-400 border border-green-800/30 transition-colors">
+                                http://{{ local_ip }}:{{ application.port }}
+                                <i data-lucide="external-link" class="w-4 h-4"></i>
+                            </a>
+                        </dd>
+                    </div>
+                    
+                    {% if application.ngrok_url %}
+                    <div class="grid grid-cols-3 gap-4 py-2 border-b border-gray-800">
+                        <dt class="font-medium text-gray-400">URL Internet (ngrok):</dt>
+                        <dd class="col-span-2">
+                            <a href="{{ application.ngrok_url }}" target="_blank" class="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-purple-900/20 hover:bg-purple-900/30 text-purple-400 border border-purple-800/30 transition-colors">
+                                {{ application.ngrok_url }}
+                                <i data-lucide="external-link" class="w-4 h-4"></i>
+                            </a>
+                        </dd>
+                    </div>
+                    {% endif %}
+                    {% endif %}
+                </dl>
+            </div>
+        </div>
+        
+        <!-- Información de comandos -->
+        <div class="rounded-lg border border-gray-800 bg-gray-900/50 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-800">
+                <h2 class="text-xl font-semibold">Comandos</h2>
+            </div>
+            <div class="p-6">
+                <div class="mb-6">
+                    <h3 class="text-sm font-medium text-gray-400 mb-2">Comando de Ejecución:</h3>
+                    <div class="bg-gray-800 p-3 rounded-md overflow-x-auto font-mono text-sm text-green-400">
+                        {% if application.app_type == "flask" %}python -m waitress --port={{ application.port }} {{ application.main_file.split('.')[0] }}:app{% elif application.app_type == "fastapi" %}uvicorn {{ application.main_file.split('.')[0] }}:app --port={{ application.port }}{% endif %}
+                    </div>
+                </div>
+                
+                <div class="mb-6">
+                    <h3 class="text-sm font-medium text-gray-400 mb-2">Directorio de Trabajo:</h3>
+                    <div class="bg-gray-800 p-3 rounded-md overflow-x-auto font-mono text-sm text-blue-400">
+                        {{ application.directory }}
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 class="text-sm font-medium text-gray-400 mb-2">Archivos de Logs:</h3>
+                    <ul class="space-y-2 text-sm">
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="file-text" class="w-4 h-4 text-gray-400"></i>
+                            <span class="font-mono text-gray-300">{{ application.directory }}/logs/stdout.log</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="file-text" class="w-4 h-4 text-gray-400"></i>
+                            <span class="font-mono text-gray-300">{{ application.directory }}/logs/stderr.log</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logs de la aplicación -->
+    <div class="rounded-lg border border-gray-800 bg-gray-900/50 overflow-hidden mb-6">
+        <div class="px-6 py-4 border-b border-gray-800 flex justify-between items-center">
+            <h2 class="text-xl font-semibold">Registro de Eventos</h2>
+            <a href="/api/applications/{{ application.id }}/logs" class="px-3 py-1 rounded-md border border-gray-700 hover:bg-gray-800 text-gray-300 flex items-center gap-2 transition-colors">
+                <i data-lucide="download" class="w-4 h-4"></i>
+                <span>JSON</span>
+            </a>
+        </div>
+        <div class="overflow-x-auto">
+            {% if logs %}
+            <table class="w-full">
+                <thead class="bg-gray-800/50 text-left">
+                    <tr>
+                        <th class="px-4 py-3 text-gray-400 font-medium w-48">Fecha</th>
+                        <th class="px-4 py-3 text-gray-400 font-medium w-24">Nivel</th>
+                        <th class="px-4 py-3 text-gray-400 font-medium">Mensaje</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-800">
+                    {% for log in logs %}
+                    <tr class="hover:bg-white/5 transition-colors">
+                        <td class="px-4 py-3 text-sm text-gray-300">{{ log.timestamp.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+                        <td class="px-4 py-3">
+                            {% if log.level == "info" %}
+                            <span class="px-2 py-1 rounded-full bg-blue-500/10 text-blue-400 text-xs border border-blue-500/20">INFO</span>
+                            {% elif log.level == "warning" %}
+                            <span class="px-2 py-1 rounded-full bg-yellow-500/10 text-yellow-400 text-xs border border-yellow-500/20">WARN</span>
+                            {% elif log.level == "error" %}
+                            <span class="px-2 py-1 rounded-full bg-red-500/10 text-red-400 text-xs border border-red-500/20">ERROR</span>
+                            {% else %}
+                            <span class="px-2 py-1 rounded-full bg-gray-500/10 text-gray-400 text-xs border border-gray-500/20">{{ log.level }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-gray-300">{{ log.message }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="py-12 text-center">
+                <div class="inline-flex p-4 rounded-full bg-gray-800/50 mb-4">
+                    <i data-lucide="clipboard-list" class="w-8 h-8 text-gray-400"></i>
+                </div>
+                <h3 class="text-xl font-semibold mb-2">No hay eventos registrados</h3>
+                <p class="text-gray-400">Los eventos aparecerán aquí cuando inicies la aplicación</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmación para eliminar -->
+<div id="deleteModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-50 hidden">
+    <div class="bg-gray-900 rounded-lg border border-gray-800 max-w-md w-full p-6 m-4">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold text-white">Confirmar Eliminación</h3>
+            <button type="button" onclick="document.getElementById('deleteModal').classList.add('hidden')" class="text-gray-400 hover:text-white">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <div class="mb-6">
+            <p class="mb-2">¿Estás seguro de que deseas eliminar la aplicación <strong>{{ application.name }}</strong>?</p>
+            <p class="text-red-400 text-sm">Esta acción no se puede deshacer.</p>
+        </div>
+        <div class="flex justify-end gap-3">
+            <button type="button" onclick="document.getElementById('deleteModal').classList.add('hidden')" class="px-4 py-2 rounded-md border border-gray-700 text-gray-300 hover:bg-gray-800 transition-colors">
+                Cancelar
+            </button>
+            <form action="/applications/{{ application.id }}/delete" method="post">
+                <button type="submit" class="px-4 py-2 rounded-md bg-red-700/30 hover:bg-red-700/40 text-red-400 border border-red-700/30 transition-colors">
+                    Eliminar Aplicación
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Actualizar la página cada 30 segundos si la aplicación está en ejecución
+    {% if application.status == "running" %}
+    setTimeout(function() {
+        location.reload();
+    }, 30000);
+    {% endif %}
+</script>
+{% endblock %}
