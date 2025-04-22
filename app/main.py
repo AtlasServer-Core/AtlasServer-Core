@@ -1,6 +1,6 @@
 #main.py
 
-from fastapi import FastAPI, Depends, HTTPException, Request, Form
+from fastapi import FastAPI, Depends, HTTPException, Request, Form, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
@@ -11,6 +11,8 @@ import json
 import tempfile
 import csv
 import io
+import aiofiles
+import asyncio
 from starlette.background import BackgroundTask
 import uvicorn
 from pydantic import BaseModel
@@ -88,6 +90,32 @@ def load_ngrok_config():
 def save_ngrok_config(config):
     with open(NGROK_CONFIG_FILE, "w") as f:
         json.dump(config, f)
+
+async def tail_file(websocket: WebSocket, file_path: str, interval: float = 0.5):
+    """
+    Lee continuamente las nuevas líneas del archivo y las envía por WebSocket.
+    """
+    try:
+        # Abrir el archivo de forma asíncrona
+        async with aiofiles.open(file_path, mode='r') as f:
+            # Ir directo al final del archivo
+            await f.seek(0, os.SEEK_END)
+            while True:
+                line = await f.readline()
+                if line:
+                    # Envía la línea nueva al cliente
+                    await websocket.send_json({"timestamp": datetime.datetime.utcnow().isoformat(),
+                                               "line": line.rstrip("\n")})
+                else:
+                    # Pausa no bloqueante antes de leer de nuevo
+                    await asyncio.sleep(interval)
+    except WebSocketDisconnect:
+        # Cliente desconectado; salir limpiamente
+        return
+    except Exception as e:
+        # Cierra el socket en caso de error
+        await websocket.close(code=1011, reason=str(e))
+
 
 # Rutas API
 @app.middleware("http")
@@ -375,6 +403,44 @@ def download_application_output_logs(
         media_type="text/plain"
     )
 
+@app.websocket("/api/applications/{app_id}/stdout-logs/")
+async def api_stdout_logs(
+    websocket: WebSocket,
+    app_id: int,
+    db: Session = Depends(get_db)
+):
+    # Aceptar la conexión WebSocket
+    await websocket.accept()
+    # Validar existencia de la aplicación
+    application = db.query(Application).filter(Application.id == app_id).first()
+    if not application:
+        await websocket.close(code=1008, reason="Aplicación no encontrada")
+        return
+    # Ruta del archivo stdout.log
+    log_file = os.path.join(application.directory, "logs", "stdout.log")
+    if not os.path.exists(log_file):
+        await websocket.close(code=1008, reason="stdout.log no encontrado")
+        return
+    # Iniciar streaming del archivo
+    await tail_file(websocket, log_file)
+
+@app.websocket("/api/applications/{app_id}/stderr-logs/")
+async def api_stderr_logs(
+    websocket: WebSocket,
+    app_id: int,
+    db: Session = Depends(get_db)
+):
+    await websocket.accept()
+    application = db.query(Application).filter(Application.id == app_id).first()
+    if not application:
+        await websocket.close(code=1008, reason="Aplicación no encontrada")
+        return
+    log_file = os.path.join(application.directory, "logs", "stderr.log")
+    if not os.path.exists(log_file):
+        await websocket.close(code=1008, reason="stderr.log no encontrado")
+        return
+    await tail_file(websocket, log_file)
+
 # Rutas de la interfaz web
 @app.get("/", response_class=HTMLResponse)
 def read_root(request: Request, current_user: User = Depends(login_required), db: Session = Depends(get_db)):
@@ -485,6 +551,28 @@ def view_application(app_id: int, request: Request, current_user: User = Depends
             "application": application, 
             "logs": logs,
             "local_ip": local_ip,
+            "user": current_user
+        }
+    )
+
+@app.get("/applications/{app_id}/logs", response_class=HTMLResponse)
+async def application_logs_page(
+    request: Request,
+    app_id: int,
+    current_user: User = Depends(login_required),
+    db: Session = Depends(get_db)
+):
+    # Busca la aplicación
+    application = db.query(Application).filter(Application.id == app_id).first()
+    if not application:
+        raise HTTPException(status_code=404, detail="Aplicación no encontrada")
+
+    # Renderiza el template que creaste (logs.html)
+    return templates.TemplateResponse(
+        "logs_terminal.html",
+        {
+            "request": request,
+            "application": application,
             "user": current_user
         }
     )

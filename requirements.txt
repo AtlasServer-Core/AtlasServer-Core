@@ -11,3 +11,4 @@ psutil
 pydantic
 python-multipart
 pyngrok
+aiofiles

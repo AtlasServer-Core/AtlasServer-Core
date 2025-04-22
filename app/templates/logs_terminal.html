@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}AtlasServer – Logs de Aplicación{% endblock %}
+{% block header_title %}Logs de Aplicación{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+
+  <!-- Información de la Aplicación (opcional) -->
+  {% if application %}
+  <div class="rounded-lg border border-gray-800 bg-gray-900/50 p-6">
+    <h2 class="text-2xl font-semibold mb-2">Aplicación: {{ application.name }}</h2>
+    <p class="text-gray-400">ID: {{ application.id }} &middot; Directorio: <code class="text-sm bg-gray-800 px-1 rounded">{{ application.directory }}</code></p>
+  </div>
+  {% endif %}
+
+  <!-- Terminal stdout -->
+  <div class="rounded-lg border border-gray-800 bg-gray-900/50 overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-800 bg-gray-800/40">
+      <h3 class="text-lg font-semibold">stdout.log</h3>
+    </div>
+    <div id="stdout-terminal" class="bg-black text-green-400 font-mono text-sm p-4 h-96 overflow-y-auto"></div>
+  </div>
+
+  <!-- Terminal stderr -->
+  <div class="rounded-lg border border-gray-800 bg-gray-900/50 overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-800 bg-gray-800/40">
+      <h3 class="text-lg font-semibold text-red-400">stderr.log</h3>
+    </div>
+    <div id="stderr-terminal" class="bg-black text-red-400 font-mono text-sm p-4 h-96 overflow-y-auto"></div>
+  </div>
+
+  <!-- Botones de acción -->
+  <div class="flex justify-end space-x-4">
+    <a href="/" class="px-4 py-2 rounded-md border border-gray-700 text-gray-300 hover:bg-gray-800 transition-colors flex items-center gap-2">
+      <i data-lucide="chevrons-left" class="w-4 h-4"></i>
+      <span>Volver al inicio</span>
+    </a>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const appId = {{ application.id if application else app_id }};
+    const proto = location.protocol === 'https:' ? 'wss://' : 'ws://';
+    const host  = location.host;
+
+    // WebSocket para stdout
+    const wsOut = new WebSocket(`${proto}${host}/api/applications/${appId}/stdout-logs/`);
+    const outDiv = document.getElementById('stdout-terminal');
+    wsOut.onmessage = evt => {
+      const { timestamp, line } = JSON.parse(evt.data);
+      outDiv.textContent += `[${timestamp}] ${line}\n`;
+      outDiv.scrollTop = outDiv.scrollHeight;
+    };
+    wsOut.onclose = () => outDiv.textContent += '\n––– Conexión cerrada –––';
+
+    // WebSocket para stderr
+    const wsErr = new WebSocket(`${proto}${host}/api/applications/${appId}/stderr-logs/`);
+    const errDiv = document.getElementById('stderr-terminal');
+    wsErr.onmessage = evt => {
+      const { timestamp, line } = JSON.parse(evt.data);
+      errDiv.textContent += `[${timestamp}] ${line}\n`;
+      errDiv.scrollTop = errDiv.scrollHeight;
+    };
+    wsErr.onclose = () => errDiv.textContent += '\n––– Conexión cerrada –––';
+
+    wsOut.onopen  = () => console.log('🔌 stdout WS conectado');
+    wsOut.onerror = e  => console.error('❌ stdout WS error', e);
+    wsErr.onopen  = () => console.log('🔌 stderr WS conectado');
+    wsErr.onerror = e  => console.error('❌ stderr WS error', e);
+  });
+</script>
+{% endblock %}
