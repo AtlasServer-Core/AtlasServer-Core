@@ -20,14 +20,14 @@
 
 ### 📄 License
 
-This project is licensed under a [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License](https://creativecommons.org/licenses/by-nc-sa/4.0/).  
-[![License: CC BY-NC-SA 4.0](https://licensebuttons.net/l/by-nc-sa/4.0/88x31.png)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
+This project is licensed under the **Apache License 2.0**. :contentReference[oaicite:1]{index=1}  
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0) :contentReference[oaicite:2]{index=2}  
 
-This means you are free to share, adapt, and build upon this project for **non-commercial purposes**, as long as:
+You may obtain a copy of the License at:  
+`http://www.apache.org/licenses/LICENSE-2.0` :contentReference[oaicite:3]{index=3}  
 
-- You give appropriate credit to the original creator.
-- You distribute any modifications under the same license.
+Unless required by applicable law or agreed to in writing, software  
+distributed under the License is distributed on an **"AS IS" BASIS**,  
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. :contentReference[oaicite:4]{index=4}  
 
-For more details, please refer to the [full license](https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode).
-
----
+See the [full license text](LICENSE) for details. :contentReference[oaicite:5]{index=5}  
