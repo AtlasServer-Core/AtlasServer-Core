@@ -21,8 +21,6 @@
 </div>
 
 
----
-
 ### ⚙️ Current Features
 
 - **Supported frameworks**: `Flask` and `FastAPI`
