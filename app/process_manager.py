@@ -135,6 +135,7 @@ class ProcessManager:
         # Construir el comando según el tipo de aplicación
         cmd = []
         env = os.environ.copy()
+        env['PYTHONUNBUFFERED'] = '1'
         cwd = application.directory
         
         if application.app_type.lower() == "flask":
@@ -179,6 +180,7 @@ class ProcessManager:
                 env=env,
                 stdout=stdout_file,
                 stderr=stderr_file,
+                bufsize=0,
                 start_new_session=True  # Crea un nuevo grupo de procesos
             )
             

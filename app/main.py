@@ -94,27 +94,120 @@ def save_ngrok_config(config):
 async def tail_file(websocket: WebSocket, file_path: str, interval: float = 0.5):
     """
     Lee continuamente las nuevas líneas del archivo y las envía por WebSocket.
+    Versión mejorada con depuración.
     """
+    print(f"⏳ Iniciando tail_file para {file_path}")
+    position = 0
+    
     try:
-        # Abrir el archivo de forma asíncrona
-        async with aiofiles.open(file_path, mode='r') as f:
-            # Ir directo al final del archivo
-            await f.seek(0, os.SEEK_END)
-            while True:
-                line = await f.readline()
-                if line:
-                    # Envía la línea nueva al cliente
-                    await websocket.send_json({"timestamp": datetime.datetime.utcnow().isoformat(),
-                                               "line": line.rstrip("\n")})
-                else:
-                    # Pausa no bloqueante antes de leer de nuevo
-                    await asyncio.sleep(interval)
+        # Enviar mensaje inicial para confirmar conexión
+        await websocket.send_json({
+            "timestamp": datetime.datetime.utcnow().isoformat(),
+            "line": "✓ Conexión establecida, monitoreando logs..."
+        })
+        
+        # Verificar si el archivo existe y establecer posición inicial
+        if os.path.exists(file_path):
+            position = os.path.getsize(file_path)
+            print(f"📄 Archivo encontrado, tamaño inicial: {position} bytes")
+            
+            # Enviar algunas líneas iniciales para verificar que funciona
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    # Leer las últimas 10 líneas aproximadamente
+                    last_pos = max(0, position - 2000)  # Leer ~2KB del final
+                    f.seek(last_pos)
+                    # Descartar la primera línea que podría estar incompleta
+                    if last_pos > 0:
+                        f.readline()
+                    # Obtener las últimas líneas
+                    last_lines = f.readlines()[-10:]
+                    
+                    for line in last_lines:
+                        line = line.rstrip('\n')
+                        if line:
+                            await websocket.send_json({
+                                "timestamp": datetime.datetime.utcnow().isoformat(),
+                                "line": f"[Histórico] {line}"
+                            })
+                    
+                    # Actualizar posición después de leer histórico
+                    position = os.path.getsize(file_path)
+            except Exception as e:
+                print(f"⚠️ Error al leer líneas históricas: {e}")
+        else:
+            print(f"⚠️ Archivo no existe: {file_path}")
+            await websocket.send_json({
+                "timestamp": datetime.datetime.utcnow().isoformat(),
+                "line": f"⚠️ El archivo de log no existe todavía: {os.path.basename(file_path)}"
+            })
+        
+        # Bucle principal de monitoreo
+        while True:
+            if os.path.exists(file_path):
+                try:
+                    current_size = os.path.getsize(file_path)
+                    
+                    # Si el archivo fue truncado
+                    if current_size < position:
+                        position = 0
+                        print(f"🔄 Archivo truncado, reiniciando desde el principio")
+                        await websocket.send_json({
+                            "timestamp": datetime.datetime.utcnow().isoformat(),
+                            "line": "🔄 Archivo de log truncado, reiniciando lectura..."
+                        })
+                    
+                    # Si hay nuevos datos
+                    if current_size > position:
+                        print(f"📝 Nuevos datos detectados: {current_size - position} bytes")
+                        
+                        # Leer usando open() estándar para evitar problemas con aiofiles
+                        with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
+                            f.seek(position)
+                            new_content = f.read(current_size - position)
+                        
+                        # Actualizar posición
+                        position = current_size
+                        
+                        # Procesar y enviar líneas
+                        lines = new_content.splitlines()
+                        if lines:
+                            print(f"📤 Enviando {len(lines)} líneas")
+                            
+                            for line in lines:
+                                if line.strip():
+                                    try:
+                                        await websocket.send_json({
+                                            "timestamp": datetime.datetime.utcnow().isoformat(),
+                                            "line": line
+                                        })
+                                    except Exception as e:
+                                        print(f"❌ Error al enviar: {str(e)}")
+                                        raise
+                except Exception as e:
+                    print(f"❌ Error procesando archivo: {str(e)}")
+                    import traceback
+                    traceback.print_exc()
+                    
+                    await websocket.send_json({
+                        "timestamp": datetime.datetime.utcnow().isoformat(),
+                        "line": f"❌ Error al leer el log: {str(e)}"
+                    })
+            
+            # Esperar antes de la siguiente verificación
+            await asyncio.sleep(interval)
+            
     except WebSocketDisconnect:
-        # Cliente desconectado; salir limpiamente
-        return
+        print("👋 Cliente WebSocket desconectado")
     except Exception as e:
-        # Cierra el socket en caso de error
-        await websocket.close(code=1011, reason=str(e))
+        print(f"💥 Error fatal en tail_file: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        
+        try:
+            await websocket.close(code=1011, reason=str(e))
+        except:
+            pass
 
 
 # Rutas API

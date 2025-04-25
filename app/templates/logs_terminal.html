@@ -6,7 +6,7 @@
 {% block content %}
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
 
-  <!-- Información de la Aplicación (opcional) -->
+  <!-- Información de la Aplicación -->
   {% if application %}
   <div class="rounded-lg border border-gray-800 bg-gray-900/50 p-6">
     <h2 class="text-2xl font-semibold mb-2">Aplicación: {{ application.name }}</h2>
@@ -16,61 +16,246 @@
 
   <!-- Terminal stdout -->
   <div class="rounded-lg border border-gray-800 bg-gray-900/50 overflow-hidden">
-    <div class="px-6 py-4 border-b border-gray-800 bg-gray-800/40">
+    <div class="px-6 py-4 border-b border-gray-800 bg-gray-800/40 flex justify-between items-center">
       <h3 class="text-lg font-semibold">stdout.log</h3>
+      <button id="clear-stdout" class="px-3 py-1 rounded text-xs bg-gray-800 hover:bg-gray-700 transition-colors">
+        Limpiar
+      </button>
     </div>
-    <div id="stdout-terminal" class="bg-black text-green-400 font-mono text-sm p-4 h-96 overflow-y-auto"></div>
+    <div id="terminal-container-stdout" class="bg-black p-1 h-96 overflow-y-auto">
+      <pre id="stdout-terminal" class="text-green-400 font-mono text-sm p-2 m-0 whitespace-pre-wrap break-words"></pre>
+    </div>
   </div>
 
   <!-- Terminal stderr -->
   <div class="rounded-lg border border-gray-800 bg-gray-900/50 overflow-hidden">
-    <div class="px-6 py-4 border-b border-gray-800 bg-gray-800/40">
+    <div class="px-6 py-4 border-b border-gray-800 bg-gray-800/40 flex justify-between items-center">
       <h3 class="text-lg font-semibold text-red-400">stderr.log</h3>
+      <button id="clear-stderr" class="px-3 py-1 rounded text-xs bg-gray-800 hover:bg-gray-700 transition-colors">
+        Limpiar
+      </button>
     </div>
-    <div id="stderr-terminal" class="bg-black text-red-400 font-mono text-sm p-4 h-96 overflow-y-auto"></div>
+    <div id="terminal-container-stderr" class="bg-black p-1 h-96 overflow-y-auto">
+      <pre id="stderr-terminal" class="text-red-400 font-mono text-sm p-2 m-0 whitespace-pre-wrap break-words"></pre>
+    </div>
   </div>
 
   <!-- Botones de acción -->
-  <div class="flex justify-end space-x-4">
-    <a href="/" class="px-4 py-2 rounded-md border border-gray-700 text-gray-300 hover:bg-gray-800 transition-colors flex items-center gap-2">
+  <div class="flex justify-between space-x-4">
+    <div class="flex items-center">
+      <label class="flex items-center text-sm text-gray-400 mr-4">
+        <input type="checkbox" id="auto-scroll" class="mr-2" checked>
+        Auto-scroll
+      </label>
+      <span id="connection-status" class="px-3 py-1 rounded-full bg-green-500/10 text-green-400 text-xs border border-green-500/20 flex items-center gap-2">
+        <span class="status-indicator running"></span>
+        Conectado
+      </span>
+    </div>
+    <a href="/applications/{{ application.id if application else app_id }}" class="px-4 py-2 rounded-md border border-gray-700 text-gray-300 hover:bg-gray-800 transition-colors flex items-center gap-2">
       <i data-lucide="chevrons-left" class="w-4 h-4"></i>
-      <span>Volver al inicio</span>
+      <span>Volver a la aplicación</span>
     </a>
   </div>
 </div>
+
+<style>
+/* Estilos adicionales para la terminal */
+#stdout-terminal, #stderr-terminal {
+  font-family: 'Courier New', monospace;
+  line-height: 1.4;
+}
+
+.log-timestamp {
+  color: #888;
+  padding-right: 5px;
+}
+
+.log-line {
+  padding-left: 5px;
+}
+
+/* Estilos para diferentes tipos de logs */
+.log-info {
+  color: #4ade80; /* light green */
+}
+
+.log-warning {
+  color: #facc15; /* yellow */
+}
+
+.log-error {
+  color: #f87171; /* red */
+}
+
+.log-system {
+  color: #60a5fa; /* blue */
+  font-style: italic;
+}
+</style>
 {% endblock %}
 
 {% block scripts %}
 <script>
-  document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', () => {
     const appId = {{ application.id if application else app_id }};
     const proto = location.protocol === 'https:' ? 'wss://' : 'ws://';
-    const host  = location.host;
-
+    const host = location.host;
+    
+    // Elementos DOM
+    const stdoutTerminal = document.getElementById('stdout-terminal');
+    const stderrTerminal = document.getElementById('stderr-terminal');
+    const connectionStatus = document.getElementById('connection-status');
+    const autoScrollCheckbox = document.getElementById('auto-scroll');
+    const clearStdoutBtn = document.getElementById('clear-stdout');
+    const clearStderrBtn = document.getElementById('clear-stderr');
+    
+    // Función para formatear mensajes de log
+    function formatLogLine(timestamp, line, isHistoric = false) {
+        const timeStr = timestamp.split('T')[1].slice(0, 8); // Extrae HH:MM:SS
+        
+        // Detectar el tipo de mensaje para aplicar clases
+        let logClass = "log-line";
+        if (line.includes("ERROR") || line.includes("error") || line.includes("Error")) {
+            logClass += " log-error";
+        } else if (line.includes("WARNING") || line.includes("WARN")) {
+            logClass += " log-warning";
+        } else if (line.includes("INFO") || line.includes("info")) {
+            logClass += " log-info";
+        } else if (isHistoric || line.startsWith("---") || line.startsWith("⚠️") || line.startsWith("✓")) {
+            logClass += " log-system";
+        }
+        
+        // Formatear con colores y estilo
+        return `<span class="log-timestamp">[${timeStr}]</span><span class="${logClass}">${line}</span>`;
+    }
+    
+    // Función para hacer scroll si está habilitado
+    function scrollToBottom(element) {
+        if (autoScrollCheckbox.checked) {
+            element.parentElement.scrollTop = element.parentElement.scrollHeight;
+        }
+    }
+    
     // WebSocket para stdout
-    const wsOut = new WebSocket(`${proto}${host}/api/applications/${appId}/stdout-logs/`);
-    const outDiv = document.getElementById('stdout-terminal');
+    const stdoutWsUrl = `${proto}${host}/api/applications/${appId}/stdout-logs/`;
+    console.log(`Conectando a stdout WebSocket: ${stdoutWsUrl}`);
+    const wsOut = new WebSocket(stdoutWsUrl);
+    
+    wsOut.onopen = () => {
+        console.log('✅ WebSocket stdout conectado');
+        stdoutTerminal.innerHTML += formatLogLine(
+            new Date().toISOString(), 
+            "--- Conexión establecida, esperando datos... ---",
+            true
+        ) + "\n";
+        connectionStatus.innerHTML = `
+            <span class="status-indicator running"></span>
+            <span>Conectado</span>
+        `;
+        connectionStatus.className = "px-3 py-1 rounded-full bg-green-500/10 text-green-400 text-xs border border-green-500/20 flex items-center gap-2";
+    };
+    
     wsOut.onmessage = evt => {
-      const { timestamp, line } = JSON.parse(evt.data);
-      outDiv.textContent += `[${timestamp}] ${line}\n`;
-      outDiv.scrollTop = outDiv.scrollHeight;
+        try {
+            const { timestamp, line } = JSON.parse(evt.data);
+            const isHistoric = line.includes("[Histórico]");
+            stdoutTerminal.innerHTML += formatLogLine(timestamp, line, isHistoric) + "\n";
+            scrollToBottom(stdoutTerminal);
+        } catch (e) {
+            console.error('Error procesando mensaje:', e);
+            stdoutTerminal.innerHTML += formatLogLine(
+                new Date().toISOString(),
+                `[ERROR] No se pudo procesar el mensaje: ${evt.data}`,
+                true
+            ) + "\n";
+        }
     };
-    wsOut.onclose = () => outDiv.textContent += '\n––– Conexión cerrada –––';
-
+    
+    wsOut.onclose = event => {
+        console.log('🔌 WebSocket stdout cerrado');
+        stdoutTerminal.innerHTML += formatLogLine(
+            new Date().toISOString(),
+            `--- Conexión cerrada (${event.code}: ${event.reason || 'Sin razón'}) ---`,
+            true
+        ) + "\n";
+        connectionStatus.innerHTML = `
+            <span class="status-indicator stopped"></span>
+            <span>Desconectado</span>
+        `;
+        connectionStatus.className = "px-3 py-1 rounded-full bg-gray-500/10 text-gray-400 text-xs border border-gray-500/20 flex items-center gap-2";
+    };
+    
+    wsOut.onerror = e => {
+        console.error('❌ Error en WebSocket stdout:', e);
+        stdoutTerminal.innerHTML += formatLogLine(
+            new Date().toISOString(),
+            "--- Error en la conexión WebSocket ---",
+            true
+        ) + "\n";
+        connectionStatus.innerHTML = `
+            <span class="status-indicator error"></span>
+            <span>Error</span>
+        `;
+        connectionStatus.className = "px-3 py-1 rounded-full bg-red-500/10 text-red-400 text-xs border border-red-500/20 flex items-center gap-2";
+    };
+    
     // WebSocket para stderr
-    const wsErr = new WebSocket(`${proto}${host}/api/applications/${appId}/stderr-logs/`);
-    const errDiv = document.getElementById('stderr-terminal');
-    wsErr.onmessage = evt => {
-      const { timestamp, line } = JSON.parse(evt.data);
-      errDiv.textContent += `[${timestamp}] ${line}\n`;
-      errDiv.scrollTop = errDiv.scrollHeight;
+    const stderrWsUrl = `${proto}${host}/api/applications/${appId}/stderr-logs/`;
+    console.log(`Conectando a stderr WebSocket: ${stderrWsUrl}`);
+    const wsErr = new WebSocket(stderrWsUrl);
+    
+    wsErr.onopen = () => {
+        console.log('✅ WebSocket stderr conectado');
+        stderrTerminal.innerHTML += formatLogLine(
+            new Date().toISOString(), 
+            "--- Conexión establecida, esperando datos... ---",
+            true
+        ) + "\n";
     };
-    wsErr.onclose = () => errDiv.textContent += '\n––– Conexión cerrada –––';
-
-    wsOut.onopen  = () => console.log('🔌 stdout WS conectado');
-    wsOut.onerror = e  => console.error('❌ stdout WS error', e);
-    wsErr.onopen  = () => console.log('🔌 stderr WS conectado');
-    wsErr.onerror = e  => console.error('❌ stderr WS error', e);
-  });
+    
+    wsErr.onmessage = evt => {
+        try {
+            const { timestamp, line } = JSON.parse(evt.data);
+            const isHistoric = line.includes("[Histórico]");
+            stderrTerminal.innerHTML += formatLogLine(timestamp, line, isHistoric) + "\n";
+            scrollToBottom(stderrTerminal);
+        } catch (e) {
+            console.error('Error procesando mensaje stderr:', e);
+            stderrTerminal.innerHTML += formatLogLine(
+                new Date().toISOString(),
+                `[ERROR] No se pudo procesar el mensaje: ${evt.data}`,
+                true
+            ) + "\n";
+        }
+    };
+    
+    wsErr.onclose = event => {
+        console.log('🔌 WebSocket stderr cerrado');
+        stderrTerminal.innerHTML += formatLogLine(
+            new Date().toISOString(),
+            `--- Conexión cerrada (${event.code}: ${event.reason || 'Sin razón'}) ---`,
+            true
+        ) + "\n";
+    };
+    
+    wsErr.onerror = e => {
+        console.error('❌ Error en WebSocket stderr:', e);
+        stderrTerminal.innerHTML += formatLogLine(
+            new Date().toISOString(),
+            "--- Error en la conexión WebSocket ---",
+            true
+        ) + "\n";
+    };
+    
+    // Manejo de botones
+    clearStdoutBtn.addEventListener('click', () => {
+        stdoutTerminal.innerHTML = "";
+    });
+    
+    clearStderrBtn.addEventListener('click', () => {
+        stderrTerminal.innerHTML = "";
+    });
+});
 </script>
 {% endblock %}
