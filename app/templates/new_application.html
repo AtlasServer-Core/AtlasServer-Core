@@ -110,6 +110,27 @@
                         <div class="border-t border-gray-800 pt-6 mt-6">
                             <h3 class="text-lg font-medium mb-4">Opciones Avanzadas</h3>
                             
+                            <!-- Selector de entorno Python -->
+                            <div class="space-y-2 mb-4">
+                                <label for="environment_type" class="block text-sm font-medium text-gray-300">Entorno Python</label>
+                                <select 
+                                    class="w-full px-4 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none" 
+                                    id="environment_type" 
+                                    name="environment_type"
+                                >
+                                    <option value="system" selected>Sistema (Global)</option>
+                                    {% if environments %}
+                                        {% for env_id, env in environments.items() %}
+                                            {% if env_id != "system" %}
+                                                <option value="{{ env_id }}">{{ env.name }}</option>
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endif %}
+                                </select>
+                                <p class="text-xs text-gray-400">Selecciona el entorno Python para ejecutar esta aplicación. Se detectarán automáticamente entornos virtuales en el directorio del proyecto.</p>
+                            </div>
+                            
+                            <!-- Opción ngrok existente -->
                             <div class="flex items-center gap-2 mt-4">
                                 <input 
                                     type="checkbox" 
@@ -200,8 +221,8 @@ app = FastAPI()</code></pre>
 
 {% block scripts %}
 <script>
-    // Validación del formulario
     document.addEventListener('DOMContentLoaded', function() {
+        // ===== VALIDACIÓN DEL FORMULARIO =====
         const form = document.querySelector('form');
         
         form.addEventListener('submit', function(event) {
@@ -236,6 +257,163 @@ app = FastAPI()</code></pre>
                 }
             });
         });
+        
+        // ===== DETECCIÓN DE ENTORNOS VIRTUALES =====
+        const directoryInput = document.getElementById('directory');
+        const environmentSelect = document.getElementById('environment_type');
+        
+        // Solo configurar si ambos elementos existen
+        if (directoryInput && environmentSelect) {
+            let debounceTimer;
+            
+            directoryInput.addEventListener('input', function() {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(detectEnvironments, 500);
+            });
+            
+            function detectEnvironments() {
+                const directory = directoryInput.value.trim();
+                if (!directory) return;
+                
+                // Mostrar indicador de carga
+                const loadingIndicator = document.createElement('div');
+                loadingIndicator.id = 'env-loading';
+                loadingIndicator.className = 'text-xs text-blue-400 mt-1 animate-pulse';
+                loadingIndicator.textContent = 'Detectando entornos virtuales...';
+                
+                const existingIndicator = document.getElementById('env-loading');
+                if (existingIndicator) existingIndicator.remove();
+                
+                directoryInput.parentNode.appendChild(loadingIndicator);
+                
+                // Realizar solicitud AJAX
+                fetch(`/api/detect-environments?directory=${encodeURIComponent(directory)}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Error en la respuesta del servidor');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        // Eliminar indicador de carga
+                        const indicator = document.getElementById('env-loading');
+                        if (indicator) indicator.remove();
+                        
+                        if (!data.success) {
+                            console.error('Error detectando entornos:', data.error);
+                            return;
+                        }
+                        
+                        // Limpiar select actual, preservando la opción "sistema"
+                        while (environmentSelect.options.length > 1) {
+                            environmentSelect.remove(1);
+                        }
+                        
+                        // Asegurar que la opción de sistema esté presente
+                        if (environmentSelect.options.length === 0) {
+                            const systemOption = document.createElement('option');
+                            systemOption.value = 'system';
+                            systemOption.textContent = 'Sistema (Global)';
+                            environmentSelect.appendChild(systemOption);
+                        }
+                        
+                        // Grupo para entornos del proyecto
+                        const projectGroup = document.createElement('optgroup');
+                        projectGroup.label = 'Entornos del Proyecto';
+                        
+                        // Grupo para otros entornos
+                        const otherGroup = document.createElement('optgroup');
+                        otherGroup.label = 'Otros Entornos';
+                        
+                        let hasProjectEnvs = false;
+                        let hasOtherEnvs = false;
+                        
+                        // Agregar entornos detectados
+                        for (const [envId, env] of Object.entries(data.environments)) {
+                            if (envId === 'system') continue;
+                            
+                            const option = document.createElement('option');
+                            option.value = envId;
+                            option.textContent = env.name;
+                            
+                            if (env.local) {
+                                projectGroup.appendChild(option);
+                                hasProjectEnvs = true;
+                            } else {
+                                otherGroup.appendChild(option);
+                                hasOtherEnvs = true;
+                            }
+                            
+                            // Seleccionar automáticamente el entorno preferido
+                            if (data.preferred === envId) {
+                                option.selected = true;
+                            }
+                        }
+                        
+                        // Agregar grupos al select
+                        if (hasProjectEnvs) {
+                            environmentSelect.appendChild(projectGroup);
+                        }
+                        
+                        if (hasOtherEnvs) {
+                            environmentSelect.appendChild(otherGroup);
+                        }
+                        
+                        // Notificar al usuario sobre entorno detectado
+                        if (data.preferred) {
+                            const notification = document.createElement('div');
+                            notification.className = 'text-xs text-green-400 mt-1 flex items-center gap-1';
+                            
+                            // Crear un icono para la notificación
+                            const icon = document.createElement('span');
+                            icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>';
+                            
+                            const text = document.createElement('span');
+                            text.textContent = 'Entorno virtual detectado automáticamente';
+                            
+                            notification.appendChild(icon);
+                            notification.appendChild(text);
+                            
+                            const existingNotification = document.getElementById('env-notification');
+                            if (existingNotification) existingNotification.remove();
+                            
+                            notification.id = 'env-notification';
+                            environmentSelect.parentNode.appendChild(notification);
+                            
+                            // Desvanecer la notificación después de 5 segundos
+                            setTimeout(() => {
+                                notification.style.opacity = '0';
+                                notification.style.transition = 'opacity 1s';
+                                setTimeout(() => {
+                                    if (notification.parentNode) {
+                                        notification.remove();
+                                    }
+                                }, 1000);
+                            }, 5000);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error en la solicitud:', error);
+                        const indicator = document.getElementById('env-loading');
+                        if (indicator) {
+                            indicator.textContent = 'Error detectando entornos';
+                            indicator.className = 'text-xs text-red-400 mt-1';
+                            
+                            // Remover después de 3 segundos
+                            setTimeout(() => {
+                                if (indicator.parentNode) {
+                                    indicator.remove();
+                                }
+                            }, 3000);
+                        }
+                    });
+            }
+            
+            // Detectar entornos inmediatamente si hay un directorio en el campo
+            if (directoryInput.value.trim()) {
+                detectEnvironments();
+            }
+        }
     });
 </script>
 {% endblock %}

@@ -15,6 +15,7 @@ import json
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+import sys
 
 DATABASE_URL = "sqlite:///./applications.db"
 engine = create_engine(
@@ -38,7 +39,6 @@ def get_db():
         yield db
     finally:
         db.close()
-
 
 
 def check_port_available(port):
@@ -66,6 +66,8 @@ class Application(Base):
     logs = relationship("Log", back_populates="application", cascade="all, delete-orphan")
     ngrok_enabled = Column(Boolean, default=False)
     ngrok_url = Column(String, nullable=True)
+    environment_type = Column(String, default="system")  # "system", "virtualenv", "conda"
+    environment_path = Column(String, nullable=True)     # ruta al entorno virtual o nombre del entorno conda
 
 class Log(Base):
     __tablename__ = "logs"
@@ -90,6 +92,86 @@ class User(Base):
     is_admin = Column(Boolean, default=True)  # El primer usuario será admin
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     is_registration_open = Column(Boolean, default=False)  # Control de registro
+
+def detect_environments(project_directory=None):
+    """
+    Detecta entornos virtuales disponibles en el sistema y en el directorio del proyecto.
+    
+    Args:
+        project_directory: Directorio del proyecto donde buscar entornos locales
+    """
+    environments = {
+        "system": {
+            "name": "Sistema (Global)",
+            "path": sys.executable,
+            "type": "system"
+        }
+    }
+    
+    # Primero, buscar entornos dentro del directorio del proyecto (prioridad alta)
+    if project_directory and os.path.exists(project_directory):
+        # Nombres comunes de carpetas de entorno virtual
+        env_folders = ["venv", ".venv", "env", ".env", "virtualenv", "pyenv"]
+        
+        for folder in env_folders:
+            env_path = os.path.join(project_directory, folder)
+            
+            # Verificar si existe el entorno
+            if os.path.exists(env_path):
+                # Determinar la ruta al ejecutable de Python
+                if os.name == 'nt':  # Windows
+                    python_bin = os.path.join(env_path, "Scripts", "python.exe")
+                else:  # Unix/Mac
+                    python_bin = os.path.join(env_path, "bin", "python")
+                
+                if os.path.exists(python_bin) and os.access(python_bin, os.X_OK):
+                    env_id = f"local:{folder}"
+                    environments[env_id] = {
+                        "name": f"Entorno del proyecto ({folder})",
+                        "path": env_path,
+                        "type": "virtualenv",
+                        "local": True,
+                        "python_bin": python_bin
+                    }
+                    # Marcar este como preferido
+                    environments[env_id]["preferred"] = True
+    
+    # Detectar entornos virtualenv
+    # Buscar en ubicaciones comunes
+    venv_paths = [
+        os.path.expanduser("~/.virtualenvs"),  # virtualenvwrapper
+        os.path.expanduser("~/venvs"),         # ubicación común
+        os.path.expanduser("~/virtualenvs"),   # otra ubicación común
+    ]
+    
+    for base_path in venv_paths:
+        if os.path.exists(base_path):
+            for env_name in os.listdir(base_path):
+                env_path = os.path.join(base_path, env_name)
+                python_bin = os.path.join(env_path, "bin", "python")
+                if os.path.exists(python_bin) and os.access(python_bin, os.X_OK):
+                    environments[f"virtualenv:{env_name}"] = {
+                        "name": f"Virtualenv: {env_name}",
+                        "path": env_path,
+                        "type": "virtualenv"
+                    }
+    
+    # Detectar entornos conda si conda está instalado
+    try:
+        conda_output = subprocess.check_output(["conda", "env", "list", "--json"], universal_newlines=True)
+        conda_envs = json.loads(conda_output)
+        
+        for env_path in conda_envs.get("envs", []):
+            env_name = os.path.basename(env_path)
+            environments[f"conda:{env_name}"] = {
+                "name": f"Conda: {env_name}",
+                "path": env_path,
+                "type": "conda"
+            }
+    except (subprocess.SubprocessError, FileNotFoundError):
+        pass  # Conda no está instalado o no se encuentra
+        
+    return environments
 
 class ProcessManager:
     def __init__(self, db: Session):
@@ -137,25 +219,50 @@ class ProcessManager:
         env = os.environ.copy()
         env['PYTHONUNBUFFERED'] = '1'
         cwd = application.directory
+
+        python_cmd = "python"  # Por defecto
+    
+        if application.environment_type == "virtualenv":
+            if application.environment_path:
+                python_bin = os.path.join(application.environment_path, "bin", "python")
+                if os.path.exists(python_bin) and os.access(python_bin, os.X_OK):
+                    python_cmd = python_bin
+                else:
+                    self._add_log(app_id, f"Entorno virtual no encontrado: {application.environment_path}", "error")
+                    return False
+    
+        elif application.environment_type == "conda":
+            # Para conda, necesitamos crear un script de activación
+            if application.environment_path:
+                conda_script = f"""
+                #!/bin/bash
+                source ~/anaconda3/etc/profile.d/conda.sh || source ~/miniconda3/etc/profile.d/conda.sh
+                conda activate {application.environment_path}
+                exec "$@"
+                """
+                script_path = os.path.join(cwd, ".conda_runner.sh")
+                with open(script_path, "w") as f:
+                    f.write(conda_script)
+                os.chmod(script_path, 0o755)
+            
+                # Ahora el comando usará el script de activación
+                cmd = [script_path]
+                python_cmd = "python"
         
         if application.app_type.lower() == "flask":
             # Formato esperado: python -m waitress --port=8000 module:app
             module_name = os.path.splitext(application.main_file)[0].replace("/", ".")
-            cmd = [
-                "python", "-m", "waitress",
-                f"--port={application.port}",
-                "--host=0.0.0.0",
-                f"{module_name}:app"
-            ]
+            if application.environment_type == "conda":
+                cmd.extend([python_cmd, "-m", "waitress", f"--port={application.port}", "--host=0.0.0.0", f"{module_name}:app"])
+            else:
+                cmd = [python_cmd, "-m", "waitress", f"--port={application.port}", "--host=0.0.0.0", f"{module_name}:app"]
         elif application.app_type.lower() == "fastapi":
             # Formato esperado: uvicorn module:app --port 8000
             module_name = os.path.splitext(application.main_file)[0].replace("\\", ".").replace("/", ".")
-            cmd = [
-                "python", "-m", "uvicorn",  
-                f"{module_name}:app", 
-                f"--port={application.port}",
-                "--host=0.0.0.0",
-            ]
+            if application.environment_type == "conda":
+                cmd.extend([python_cmd, "-m", "uvicorn", f"{module_name}:app", f"--port={application.port}", "--host=0.0.0.0"])
+            else:
+                cmd = [python_cmd, "-m", "uvicorn", f"{module_name}:app", f"--port={application.port}", "--host=0.0.0.0"]
         else:
             self._add_log(app_id, f"Tipo de aplicación no soportado: {application.app_type}", "error")
             return False
