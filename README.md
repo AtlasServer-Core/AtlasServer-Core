@@ -31,7 +31,7 @@
 
 ### ⚙️ Current Features
 
-- **Supported frameworks**: `Flask` and `FastAPI`
+- **Supported frameworks**: `Flask`, `FastAPI`, `Django` and `Django REST Framework`
 - **Tunneling**: Support for `Ngrok`
 - **Admin panel**: Basic web interface to manage applications
 - **App management**: Start, stop, and delete applications from the panel

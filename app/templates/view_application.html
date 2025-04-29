@@ -37,6 +37,8 @@
                 <span class="px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 text-sm border border-blue-500/20">Flask (Waitress)</span>
                 {% elif application.app_type == "fastapi" %}
                 <span class="px-3 py-1 rounded-full bg-green-500/10 text-green-400 text-sm border border-green-500/20">FastAPI (Uvicorn)</span>
+                {% elif application.app_type == "django" %}
+                <span class="px-3 py-1 rounded-full bg-purple-500/10 text-purple-400 text-sm border border-purple-500/20">Django (Gunicorn)</span>
                 {% else %}
                 <span class="px-3 py-1 rounded-full bg-gray-500/10 text-gray-400 text-sm border border-gray-500/20">{{ application.app_type }}</span>
                 {% endif %}
@@ -165,7 +167,13 @@
                 <div class="mb-6">
                     <h3 class="text-sm font-medium text-gray-400 mb-2">Comando de Ejecución:</h3>
                     <div class="bg-gray-800 p-3 rounded-md overflow-x-auto font-mono text-sm text-green-400">
-                        {% if application.app_type == "flask" %}python -m waitress --port={{ application.port }} {{ application.main_file.split('.')[0] }}:app{% elif application.app_type == "fastapi" %}uvicorn {{ application.main_file.split('.')[0] }}:app --port={{ application.port }}{% endif %}
+                        {% if application.app_type == "flask" %}
+                            python -m waitress --port={{ application.port }} {{ application.main_file.split('.')[0] }}:app
+                        {% elif application.app_type == "fastapi" %}
+                            uvicorn {{ application.main_file.split('.')[0] }}:app --port={{ application.port }}
+                        {% elif application.app_type == "django" %}
+                            python -m gunicorn {{ django_project_name }}.wsgi:application --bind=0.0.0.0:{{ application.port }}
+                        {% endif %}
                     </div>
                 </div>
                 
@@ -189,9 +197,37 @@
                         </li>
                     </ul>
                 </div>
+
+                {% if application.app_type == "django" %}
+                <div class="grid grid-cols-3 gap-4 py-2 border-b border-gray-800">
+                    <dt class="font-medium text-gray-400">Admin URL:</dt>
+                    <dd class="col-span-2">
+                        <a href="http://{{ local_ip }}:{{ application.port }}/admin/" target="_blank" class="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-purple-900/20 hover:bg-purple-900/30 text-purple-400 border border-purple-800/30 transition-colors">
+                            http://{{ local_ip }}:{{ application.port }}/admin/
+                            <i data-lucide="external-link" class="w-4 h-4"></i>
+                        </a>
+                    </dd>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
+
+    
+    {% if application.app_type == "django" %}
+    <div class="rounded-lg border border-gray-800 bg-gray-900/50 overflow-hidden mb-6">
+        <div class="px-6 py-4 border-b border-gray-800">
+            <h2 class="text-xl font-semibold">Migraciones de Django</h2>
+        </div>
+        <div class="p-6">
+            <button id="check-migrations" class="px-4 py-2 rounded-md bg-purple-600 hover:bg-purple-700 text-white transition-colors flex items-center gap-2">
+                <i data-lucide="database" class="w-4 h-4"></i>
+                    <span>Verificar Migraciones</span>
+            </button>
+        <div id="migrations-result" class="mt-4 hidden"></div>
+        </div>
+    </div>
+    {% endif %}
 
     <!-- Logs de la aplicación -->
     <div class="rounded-lg border border-gray-800 bg-gray-900/50 overflow-hidden mb-6">
@@ -339,4 +375,144 @@
     }, 30000);
     {% endif %}
 </script>
+
+{% if application.app_type == "django" %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const checkMigrationsBtn = document.getElementById('check-migrations');
+        const applyMigrationsBtn = document.getElementById('apply-migrations');
+        const resultDiv = document.getElementById('migrations-result');
+        
+        // Función para verificar migraciones
+        function checkMigrations() {
+            resultDiv.innerHTML = `
+                <div class="p-6 text-center">
+                    <i data-lucide="loader-2" class="w-8 h-8 mx-auto mb-3 animate-spin text-purple-400"></i>
+                    <p class="text-gray-300">Verificando migraciones...</p>
+                </div>
+            `;
+            resultDiv.classList.remove('hidden');
+            
+            // Actualizar íconos
+            lucide.createIcons();
+            
+            fetch('/api/applications/{{ application.id }}/django-migrations')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Error al verificar migraciones');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        // Agrupar migraciones por app
+                        const appGroups = {};
+                        data.migrations.forEach(m => {
+                            if (!appGroups[m.app]) {
+                                appGroups[m.app] = [];
+                            }
+                            appGroups[m.app].push(m);
+                        });
+                        
+                        // Construir HTML
+                        let html = `
+                            <div class="border border-gray-700 rounded-lg overflow-hidden">
+                                <div class="px-4 py-3 bg-gray-800 flex justify-between items-center">
+                                    <h3 class="font-medium">Estado de Migraciones</h3>
+                                    <span class="px-3 py-1 rounded-full ${data.pending_count === 0 ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'}">
+                                        ${data.status}
+                                    </span>
+                                </div>
+                                <div class="divide-y divide-gray-700">
+                        `;
+                        
+                        // Mostrar apps y sus migraciones
+                        Object.keys(appGroups).sort().forEach(app => {
+                            const migrations = appGroups[app];
+                            const pendingCount = migrations.filter(m => !m.applied).length;
+                            
+                            html += `
+                                <div class="p-4">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <h4 class="font-medium text-gray-300">${app}</h4>
+                                        <span class="text-sm ${pendingCount === 0 ? 'text-green-400' : 'text-yellow-400'}">
+                                            ${pendingCount === 0 ? '✓ Al día' : `${pendingCount} pendiente${pendingCount !== 1 ? 's' : ''}`}
+                                        </span>
+                                    </div>
+                                    <ul class="space-y-1 pl-2">
+                            `;
+                            
+                            migrations.forEach(m => {
+                                html += `
+                                    <li class="flex items-center gap-2 text-sm">
+                                        <span class="${m.applied ? 'text-green-400' : 'text-gray-500'}">
+                                            ${m.applied ? '✓' : '○'}
+                                        </span>
+                                        <span class="${m.applied ? 'text-gray-300' : 'text-gray-500'}">${m.name}</span>
+                                    </li>
+                                `;
+                            });
+                            
+                            html += `
+                                    </ul>
+                                </div>
+                            `;
+                        });
+                        
+                        html += `
+                                </div>
+                            </div>
+                        `;
+                        
+                        resultDiv.innerHTML = html;
+                    } else {
+                        // Mostrar error
+                        resultDiv.innerHTML = `
+                            <div class="p-4 rounded-md bg-red-500/10 border border-red-500/30 text-red-400">
+                                <div class="flex items-start gap-3">
+                                    <i data-lucide="alert-triangle" class="w-5 h-5 mt-0.5"></i>
+                                    <div>
+                                        <h3 class="font-medium mb-1">Error al verificar migraciones</h3>
+                                        <p class="text-sm">${data.error}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    // Actualizar íconos
+                    lucide.createIcons();
+                })
+                .catch(error => {
+                    resultDiv.innerHTML = `
+                        <div class="p-4 rounded-md bg-red-500/10 border border-red-500/30 text-red-400">
+                            <div class="flex items-start gap-3">
+                                <i data-lucide="alert-triangle" class="w-5 h-5 mt-0.5"></i>
+                                <div>
+                                    <h3 class="font-medium mb-1">Error</h3>
+                                    <p class="text-sm">${error.message}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    lucide.createIcons();
+                });
+        }
+        
+        // Configurar botones
+        if (checkMigrationsBtn) {
+            checkMigrationsBtn.addEventListener('click', checkMigrations);
+        }
+        
+        // TODO: Implementar la función para aplicar migraciones
+        if (applyMigrationsBtn) {
+            applyMigrationsBtn.addEventListener('click', function() {
+                // Esta funcionalidad requeriría otra API que ejecute "python manage.py migrate"
+                alert('Funcionalidad no implementada. Necesitarías crear un endpoint adicional para ejecutar "python manage.py migrate"');
+            });
+        }
+    });
+</script>
+{% endif %}
+
 {% endblock %}

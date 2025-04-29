@@ -263,6 +263,23 @@ class ProcessManager:
                 cmd.extend([python_cmd, "-m", "uvicorn", f"{module_name}:app", f"--port={application.port}", "--host=0.0.0.0"])
             else:
                 cmd = [python_cmd, "-m", "uvicorn", f"{module_name}:app", f"--port={application.port}", "--host=0.0.0.0"]
+
+        elif application.app_type.lower() == "django":
+            project_dirs = [d for d in os.listdir(application.directory) 
+                   if os.path.isdir(os.path.join(application.directory, d)) 
+                   and os.path.exists(os.path.join(application.directory, d, 'wsgi.py'))]
+
+            if not project_dirs:
+                self._add_log(app_id, "No se pudo detectar el módulo WSGI de Django", "error")
+                return False
+
+            project_name = project_dirs[0]
+            env["DJANGO_SETTINGS_MODULE"] = f"{project_name}.settings"
+
+            if application.environment_type == "conda":
+                cmd.extend([python_cmd, "-m", "gunicorn", f"{project_name}.wsgi:application", "--bind", f"0.0.0.0:{application.port}"])
+            else:
+                cmd = [python_cmd, "-m", "gunicorn", f"{project_name}.wsgi:application", "--bind", f"0.0.0.0:{application.port}"]
         else:
             self._add_log(app_id, f"Tipo de aplicación no soportado: {application.app_type}", "error")
             return False

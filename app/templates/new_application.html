@@ -53,6 +53,7 @@
                                     <option value="" disabled {% if not form_data or not form_data.app_type %}selected{% endif %}>Selecciona un tipo</option>
                                     <option value="flask" {% if form_data and form_data.app_type == 'flask' %}selected{% endif %}>Flask (Waitress)</option>
                                     <option value="fastapi" {% if form_data and form_data.app_type == 'fastapi' %}selected{% endif %}>FastAPI (Uvicorn)</option>
+                                    <option value="django" {% if form_data and form_data.app_type == 'django' %}selected{% endif %}>Django (Gunicorn)</option>
                                 </select>
                             </div>
                         </div>
@@ -181,6 +182,26 @@ app = Flask(__name__)</code></pre>
                         <pre class="code-block"><code>from fastapi import FastAPI
 app = FastAPI()</code></pre>
                     </div>
+
+                <div>
+                    <div class="flex items-center gap-2 mb-2">
+                        <i data-lucide="info" class="w-5 h-5 text-purple-400"></i>
+                        <h3 class="font-medium">Django con Gunicorn</h3>
+                    </div>
+                    <p class="text-sm text-gray-400 mb-2">Para aplicaciones Django, configura tu proyecto así:</p>
+                    <pre class="code-block"><code>
+                # Estructura del proyecto
+                myproject/
+                ├── manage.py            # ← Archivo principal a especificar
+                ├── myproject/
+                │   ├── settings.py
+                │   └── wsgi.py          # Usado por Gunicorn
+                
+                # Asegúrate de:
+                # 1. Tener gunicorn instalado: pip install gunicorn
+                # 2. Configurar ALLOWED_HOSTS = ['*'] en settings.py
+                    </code></pre>
+                </div>
                 </div>
             </div>
             
@@ -416,4 +437,32 @@ app = FastAPI()</code></pre>
         }
     });
 </script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const appTypeSelect = document.getElementById('app_type');
+      const mainFileInput = document.getElementById('main_file');
+  
+      function toggleMainFileField() {
+        if (appTypeSelect.value === 'django') {
+          mainFileInput.value = 'manage.py';
+          mainFileInput.setAttribute('readonly', 'readonly');
+          mainFileInput.classList.add('cursor-not-allowed', 'bg-gray-700');
+        } else {
+          // Si cambias a otro tipo, restaura el campo
+          mainFileInput.removeAttribute('readonly');
+          mainFileInput.classList.remove('cursor-not-allowed', 'bg-gray-700');
+          // Opcional: limpia o restaura valor previo
+          mainFileInput.value = '';
+        }
+      }
+  
+      // Reactiva el comportamiento al cargar la página
+      toggleMainFileField();
+  
+      // Cada vez que cambie el tipo de app
+      appTypeSelect.addEventListener('change', toggleMainFileField);
+    });
+  </script>
+  
 {% endblock %}

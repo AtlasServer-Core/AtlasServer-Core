@@ -12,3 +12,4 @@ pydantic
 python-multipart
 pyngrok
 aiofiles
+gunicorn

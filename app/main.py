@@ -838,6 +838,98 @@ def api_detect_environments(
         "preferred": preferred_env
     }
 
+# Nueva API para Django
+@app.get("/api/applications/{app_id}/django-migrations")
+async def check_django_migrations(
+    app_id: int,
+    current_user: User = Depends(login_required),
+    db: Session = Depends(get_db)
+):
+    """Verifica el estado de las migraciones de una aplicación Django"""
+    
+    # Obtener la aplicación
+    application = db.query(Application).filter(Application.id == app_id).first()
+    if not application:
+        raise HTTPException(status_code=404, detail="Aplicación no encontrada")
+    
+    # Verificar que sea una aplicación Django
+    if application.app_type.lower() != "django":
+        raise HTTPException(status_code=400, detail="La aplicación no es de tipo Django")
+    
+    try:
+        # Preparar entorno
+        env = os.environ.copy()
+        python_cmd = "python"  # Por defecto
+        
+        # Manejar entornos virtuales si está configurado
+        if application.environment_type != "system" and application.environment_path:
+            if application.environment_type == "virtualenv":
+                if os.name == 'nt':  # Windows
+                    python_cmd = os.path.join(application.environment_path, "Scripts", "python.exe")
+                else:  # Unix/Mac
+                    python_cmd = os.path.join(application.environment_path, "bin", "python")
+        
+        # Ejecutar comando para verificar migraciones
+        result = subprocess.run(
+            [python_cmd, "manage.py", "showmigrations", "--list"],
+            cwd=application.directory,
+            env=env,
+            capture_output=True,
+            text=True
+        )
+        
+        # Procesar la salida
+        migrations = []
+        
+        if result.returncode == 0:
+            # Analizar la salida del comando showmigrations
+            current_app = None
+            
+            for line in result.stdout.split('\n'):
+                line = line.strip()
+                
+                # Línea de aplicación
+                if line and not line.startswith('['):
+                    current_app = line
+                
+                # Línea de migración
+                elif line.startswith('['):
+                    applied = '[X]' in line
+                    name = line.split(']', 1)[1].strip()
+                    
+                    migrations.append({
+                        "app": current_app,
+                        "name": name,
+                        "applied": applied
+                    })
+            
+            # Incluir mensaje sobre migraciones pendientes
+            pending_count = sum(1 for m in migrations if not m["applied"])
+            status_message = "Todas las migraciones aplicadas" if pending_count == 0 else f"{pending_count} migraciones pendientes"
+            
+            return {
+                "success": True,
+                "migrations": migrations,
+                "status": status_message,
+                "pending_count": pending_count
+            }
+        else:
+            # Error al ejecutar el comando
+            error_msg = result.stderr or "Error desconocido al verificar migraciones"
+            return {
+                "success": False,
+                "error": error_msg,
+                "migrations": []
+            }
+            
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "migrations": []
+        }
+
+
 # Rutas de la interfaz web
 @app.get("/", response_class=HTMLResponse)
 def read_root(request: Request, current_user: User = Depends(login_required), db: Session = Depends(get_db)):
@@ -901,7 +993,7 @@ def create_application_form(
             )
         
         # Validar el tipo de aplicación
-        if app_type.lower() not in ["flask", "fastapi"]:
+        if app_type.lower() not in ["flask", "fastapi", "django"]:
             return templates.TemplateResponse(
                 "new_application.html", 
                 {"request": request, "error": "Tipo de aplicación no válido. Debe ser 'flask' o 'fastapi'", "form_data": locals()},
