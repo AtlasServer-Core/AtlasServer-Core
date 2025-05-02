@@ -77,6 +77,19 @@ atlasserver app info APP_ID    # Show application details
 
 ---
 
+---
+
+### 📢 Join the Beta
+
+We’re running a **3–4 week closed beta** to refine usability, tunnel stability, and overall workflow.
+
+👉 **Join our Discord** for beta access, discussions, and direct feedback:
+
+[![Discord](https://img.shields.io/badge/Join%20Beta%20Discord-7289DA?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/QedUbbQpK9)
+
+---
+
+
 ### 📄 License
 
 This project is licensed under the **Apache License 2.0**. 
