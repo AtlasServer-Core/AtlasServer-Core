@@ -77,7 +77,6 @@ atlasserver app info APP_ID    # Show application details
 
 ---
 
----
 
 ### 📢 Join the Beta
 
