@@ -52,3 +52,9 @@ distributed under the License is distributed on an **"AS IS" BASIS**,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
 
 See the [full license text](LICENSE) for details. 
+
+## 💖 Support the Project
+
+If you find AtlasServer-Core useful, please consider buying me a coffee:
+
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/atlasserver)
