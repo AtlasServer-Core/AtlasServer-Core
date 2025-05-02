@@ -35,13 +35,51 @@
 - **Tunneling**: Support for `Ngrok`
 - **Admin panel**: Basic web interface to manage applications
 - **App management**: Start, stop, and delete applications from the panel
+- **Command Line Interface**: Manage server and applications from the terminal
 - **Authentication**: Basic authentication system with limited roles
+
+---
+
+### 🚀 Quick Start
+
+```bash
+# Clone the repository
+git clone https://github.com/AtlasServer-Core/AtlasServer-Core.git
+cd AtlasServer-Core
+
+# Install AtlasServer
+pip install .
+
+# Start the server
+atlasserver start
+
+# List all applications
+atlasserver app list
+```
+
+### 💻 CLI Commands
+
+AtlasServer includes a powerful CLI for easier management:
+
+```bash
+# Server management
+atlasserver start    # Start the server
+atlasserver stop     # Stop the server
+atlasserver status   # Check server status
+
+# Application management
+atlasserver app list           # List all applications
+atlasserver app start APP_ID   # Start an application
+atlasserver app stop APP_ID    # Stop an application
+atlasserver app restart APP_ID # Restart an application
+atlasserver app info APP_ID    # Show application details
+```
 
 ---
 
 ### 📄 License
 
-This project is licensed under the **Apache License 2.0**. 
+This project is licensed under the **Apache License 2.0**. 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 
 You may obtain a copy of the License at:  
