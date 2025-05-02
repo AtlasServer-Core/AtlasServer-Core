@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
-{% block title %}AtlasServer – Logs de Aplicación{% endblock %}
-{% block header_title %}Logs de Aplicación{% endblock %}
+{% block title %}AtlasServer - Application Logs{% endblock %}
+{% block header_title %}Application Logs{% endblock %}
 
 {% block content %}
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
@@ -9,7 +9,7 @@
   <!-- Información de la Aplicación -->
   {% if application %}
   <div class="rounded-lg border border-gray-800 bg-gray-900/50 p-6">
-    <h2 class="text-2xl font-semibold mb-2">Aplicación: {{ application.name }}</h2>
+    <h2 class="text-2xl font-semibold mb-2">Application: {{ application.name }}</h2>
     <p class="text-gray-400">ID: {{ application.id }} &middot; Directorio: <code class="text-sm bg-gray-800 px-1 rounded">{{ application.directory }}</code></p>
   </div>
   {% endif %}
@@ -19,7 +19,7 @@
     <div class="px-6 py-4 border-b border-gray-800 bg-gray-800/40 flex justify-between items-center">
       <h3 class="text-lg font-semibold">stdout.log</h3>
       <button id="clear-stdout" class="px-3 py-1 rounded text-xs bg-gray-800 hover:bg-gray-700 transition-colors">
-        Limpiar
+        Clear
       </button>
     </div>
     <div id="terminal-container-stdout" class="bg-black p-1 h-96 overflow-y-auto">
@@ -32,7 +32,7 @@
     <div class="px-6 py-4 border-b border-gray-800 bg-gray-800/40 flex justify-between items-center">
       <h3 class="text-lg font-semibold text-red-400">stderr.log</h3>
       <button id="clear-stderr" class="px-3 py-1 rounded text-xs bg-gray-800 hover:bg-gray-700 transition-colors">
-        Limpiar
+        Clear
       </button>
     </div>
     <div id="terminal-container-stderr" class="bg-black p-1 h-96 overflow-y-auto">
@@ -49,12 +49,12 @@
       </label>
       <span id="connection-status" class="px-3 py-1 rounded-full bg-green-500/10 text-green-400 text-xs border border-green-500/20 flex items-center gap-2">
         <span class="status-indicator running"></span>
-        Conectado
+        Connected
       </span>
     </div>
     <a href="/applications/{{ application.id if application else app_id }}" class="px-4 py-2 rounded-md border border-gray-700 text-gray-300 hover:bg-gray-800 transition-colors flex items-center gap-2">
       <i data-lucide="chevrons-left" class="w-4 h-4"></i>
-      <span>Volver a la aplicación</span>
+      <span>Back to application</span>
     </a>
   </div>
 </div>

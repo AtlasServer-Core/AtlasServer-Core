@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}AtlasServer - {{ application.name }}{% endblock %}
-{% block header_title %}Detalles de Aplicación{% endblock %}
+{% block header_title %}Application Details{% endblock %}
 
 {% block content %}
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -12,12 +12,12 @@
                 {% if application.status == "running" %}
                 <span class="px-3 py-1 rounded-full bg-green-500/10 text-green-400 text-sm border border-green-500/20 flex items-center gap-2">
                     <span class="status-indicator running"></span>
-                    Ejecutando
+                    Running
                 </span>
                 {% elif application.status == "stopped" %}
                 <span class="px-3 py-1 rounded-full bg-gray-500/10 text-gray-400 text-sm border border-gray-500/20 flex items-center gap-2">
                     <span class="status-indicator stopped"></span>
-                    Detenido
+                    Stopped
                 </span>
                 {% elif application.status == "error" %}
                 <span class="px-3 py-1 rounded-full bg-red-500/10 text-red-400 text-sm border border-red-500/20 flex items-center gap-2">
@@ -42,7 +42,7 @@
                 {% else %}
                 <span class="px-3 py-1 rounded-full bg-gray-500/10 text-gray-400 text-sm border border-gray-500/20">{{ application.app_type }}</span>
                 {% endif %}
-                <span class="text-gray-400">Puerto: {{ application.port or 'No asignado' }}</span>
+                <span class="text-gray-400">Port: {{ application.port or 'Not assigned' }}</span>
             </div>
         </div>
         
@@ -51,20 +51,20 @@
             <form action="/applications/{{ application.id }}/stop" method="post">
                 <button type="submit" class="px-4 py-2 rounded-md bg-yellow-700/20 hover:bg-yellow-700/30 text-yellow-400 border border-yellow-700/30 transition-colors flex items-center gap-2">
                     <i data-lucide="square" class="w-5 h-5"></i>
-                    <span>Detener</span>
+                    <span>Stop</span>
                 </button>
             </form>
             <form action="/applications/{{ application.id }}/restart" method="post">
                 <button type="submit" class="px-4 py-2 rounded-md bg-blue-700/20 hover:bg-blue-700/30 text-blue-400 border border-blue-700/30 transition-colors flex items-center gap-2">
                     <i data-lucide="refresh-cw" class="w-5 h-5"></i>
-                    <span>Reiniciar</span>
+                    <span>Restart</span>
                 </button>
             </form>
             {% elif application.status in ["stopped", "error"] %}
             <form action="/applications/{{ application.id }}/start" method="post">
                 <button type="submit" class="px-4 py-2 rounded-md bg-green-700/20 hover:bg-green-700/30 text-green-400 border border-green-700/30 transition-colors flex items-center gap-2">
                     <i data-lucide="play" class="w-5 h-5"></i>
-                    <span>Iniciar</span>
+                    <span>Start</span>
                 </button>
             </form>
             {% endif %}
@@ -72,14 +72,14 @@
             <a href="/applications/{{ application.id }}/logs"
                 class="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center gap-2">
                 <i data-lucide="monitor" class="w-5 h-5"></i>
-                <span>Ver logs en tiempo real</span>
+                <span>View logs in real time</span>
             </a>
 
             <button type="button" 
                    onclick="document.getElementById('deleteModal').classList.remove('hidden')"
                    class="px-4 py-2 rounded-md bg-red-700/20 hover:bg-red-700/30 text-red-400 border border-red-700/30 transition-colors flex items-center gap-2">
                 <i data-lucide="trash-2" class="w-5 h-5"></i>
-                <span>Eliminar</span>
+                <span>Delete</span>
             </button>
         </div>
     </div>
@@ -88,17 +88,17 @@
         <!-- Información de la aplicación -->
         <div class="rounded-lg border border-gray-800 bg-gray-900/50 overflow-hidden">
             <div class="px-6 py-4 border-b border-gray-800">
-                <h2 class="text-xl font-semibold">Información</h2>
+                <h2 class="text-xl font-semibold">Information</h2>
             </div>
             <div class="p-6">
                 <dl class="grid grid-cols-1 gap-4">
                     <div class="grid grid-cols-3 gap-4 py-2 border-b border-gray-800">
-                        <dt class="font-medium text-gray-400">Estado:</dt>
+                        <dt class="font-medium text-gray-400">Status:</dt>
                         <dd class="col-span-2 text-white">
                             {% if application.status == "running" %}
-                            <span class="px-3 py-1 rounded-full bg-green-500/10 text-green-400 text-sm border border-green-500/20">Ejecutando</span>
+                            <span class="px-3 py-1 rounded-full bg-green-500/10 text-green-400 text-sm border border-green-500/20">Running</span>
                             {% elif application.status == "stopped" %}
-                            <span class="px-3 py-1 rounded-full bg-gray-500/10 text-gray-400 text-sm border border-gray-500/20">Detenido</span>
+                            <span class="px-3 py-1 rounded-full bg-gray-500/10 text-gray-400 text-sm border border-gray-500/20">Stopped</span>
                             {% elif application.status == "error" %}
                             <span class="px-3 py-1 rounded-full bg-red-500/10 text-red-400 text-sm border border-red-500/20">Error</span>
                             {% else %}
@@ -113,7 +113,7 @@
                     </div>
                     
                     <div class="grid grid-cols-3 gap-4 py-2 border-b border-gray-800">
-                        <dt class="font-medium text-gray-400">Directorio:</dt>
+                        <dt class="font-medium text-gray-400">Directory:</dt>
                         <dd class="col-span-2">
                             <div class="bg-gray-800 p-2 rounded-md overflow-x-auto font-mono text-sm text-gray-300">
                                 {{ application.directory }}
@@ -122,18 +122,18 @@
                     </div>
                     
                     <div class="grid grid-cols-3 gap-4 py-2 border-b border-gray-800">
-                        <dt class="font-medium text-gray-400">Archivo Principal:</dt>
+                        <dt class="font-medium text-gray-400">Main File:</dt>
                         <dd class="col-span-2 text-white font-mono">{{ application.main_file }}</dd>
                     </div>
                     
                     <div class="grid grid-cols-3 gap-4 py-2 border-b border-gray-800">
-                        <dt class="font-medium text-gray-400">Creado:</dt>
+                        <dt class="font-medium text-gray-400">Created:</dt>
                         <dd class="col-span-2 text-white">{{ application.created_at.strftime('%d/%m/%Y %H:%M:%S') }}</dd>
                     </div>
                     
                     {% if application.status == "running" %}
                     <div class="grid grid-cols-3 gap-4 py-2 border-b border-gray-800">
-                        <dt class="font-medium text-gray-400">URL LAN:</dt>
+                        <dt class="font-medium text-gray-400">LAN URL:</dt>
                         <dd class="col-span-2">
                             <a href="http://{{ local_ip }}:{{ application.port }}" target="_blank" class="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-green-900/20 hover:bg-green-900/30 text-green-400 border border-green-800/30 transition-colors">
                                 http://{{ local_ip }}:{{ application.port }}
@@ -144,7 +144,7 @@
                     
                     {% if application.ngrok_url %}
                     <div class="grid grid-cols-3 gap-4 py-2 border-b border-gray-800">
-                        <dt class="font-medium text-gray-400">URL Internet (ngrok):</dt>
+                        <dt class="font-medium text-gray-400">Internet URL (ngrok):</dt>
                         <dd class="col-span-2">
                             <a href="{{ application.ngrok_url }}" target="_blank" class="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-purple-900/20 hover:bg-purple-900/30 text-purple-400 border border-purple-800/30 transition-colors">
                                 {{ application.ngrok_url }}
@@ -161,11 +161,11 @@
         <!-- Información de comandos -->
         <div class="rounded-lg border border-gray-800 bg-gray-900/50 overflow-hidden">
             <div class="px-6 py-4 border-b border-gray-800">
-                <h2 class="text-xl font-semibold">Comandos</h2>
+                <h2 class="text-xl font-semibold">Commands</h2>
             </div>
             <div class="p-6">
                 <div class="mb-6">
-                    <h3 class="text-sm font-medium text-gray-400 mb-2">Comando de Ejecución:</h3>
+                    <h3 class="text-sm font-medium text-gray-400 mb-2">Execution Command:</h3>
                     <div class="bg-gray-800 p-3 rounded-md overflow-x-auto font-mono text-sm text-green-400">
                         {% if application.app_type == "flask" %}
                             python -m waitress --port={{ application.port }} {{ application.main_file.split('.')[0] }}:app
@@ -178,14 +178,14 @@
                 </div>
                 
                 <div class="mb-6">
-                    <h3 class="text-sm font-medium text-gray-400 mb-2">Directorio de Trabajo:</h3>
+                    <h3 class="text-sm font-medium text-gray-400 mb-2">Working Directory:</h3>
                     <div class="bg-gray-800 p-3 rounded-md overflow-x-auto font-mono text-sm text-blue-400">
                         {{ application.directory }}
                     </div>
                 </div>
                 
                 <div>
-                    <h3 class="text-sm font-medium text-gray-400 mb-2">Archivos de Logs:</h3>
+                    <h3 class="text-sm font-medium text-gray-400 mb-2">Log Files:</h3>
                     <ul class="space-y-2 text-sm">
                         <li class="flex items-center gap-2">
                             <i data-lucide="file-text" class="w-4 h-4 text-gray-400"></i>
@@ -217,12 +217,12 @@
     {% if application.app_type == "django" %}
     <div class="rounded-lg border border-gray-800 bg-gray-900/50 overflow-hidden mb-6">
         <div class="px-6 py-4 border-b border-gray-800">
-            <h2 class="text-xl font-semibold">Migraciones de Django</h2>
+            <h2 class="text-xl font-semibold">Django Migrations</h2>
         </div>
         <div class="p-6">
             <button id="check-migrations" class="px-4 py-2 rounded-md bg-purple-600 hover:bg-purple-700 text-white transition-colors flex items-center gap-2">
                 <i data-lucide="database" class="w-4 h-4"></i>
-                    <span>Verificar Migraciones</span>
+                    <span>Check Migrations</span>
             </button>
         <div id="migrations-result" class="mt-4 hidden"></div>
         </div>
@@ -232,7 +232,7 @@
     <!-- Logs de la aplicación -->
     <div class="rounded-lg border border-gray-800 bg-gray-900/50 overflow-hidden mb-6">
         <div class="px-6 py-4 border-b border-gray-800 flex justify-between items-center">
-            <h2 class="text-xl font-semibold">Registro de Eventos</h2>
+            <h2 class="text-xl font-semibold">Event Log</h2>
             <div class="flex gap-2">
                 <a href="/api/applications/{{ application.id }}/logs/download?format=csv" class="px-3 py-1 rounded-md border border-gray-700 hover:bg-gray-800 text-gray-300 flex items-center gap-2 transition-colors">
                     <i data-lucide="download" class="w-4 h-4"></i>
@@ -249,9 +249,9 @@
             <table class="w-full">
                 <thead class="bg-gray-800/50 text-left">
                     <tr>
-                        <th class="px-4 py-3 text-gray-400 font-medium w-48">Fecha</th>
-                        <th class="px-4 py-3 text-gray-400 font-medium w-24">Nivel</th>
-                        <th class="px-4 py-3 text-gray-400 font-medium">Mensaje</th>
+                        <th class="px-4 py-3 text-gray-400 font-medium w-48">Date</th>
+                        <th class="px-4 py-3 text-gray-400 font-medium w-24">Level</th>
+                        <th class="px-4 py-3 text-gray-400 font-medium">Message</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-800">
@@ -279,8 +279,8 @@
                 <div class="inline-flex p-4 rounded-full bg-gray-800/50 mb-4">
                     <i data-lucide="clipboard-list" class="w-8 h-8 text-gray-400"></i>
                 </div>
-                <h3 class="text-xl font-semibold mb-2">No hay eventos registrados</h3>
-                <p class="text-gray-400">Los eventos aparecerán aquí cuando inicies la aplicación</p>
+                <h3 class="text-xl font-semibold mb-2">No events registered</h3>
+                <p class="text-gray-400">Events will appear here when you start the application</p>
             </div>
             {% endif %}
         </div>
@@ -289,7 +289,7 @@
     <!-- Logs de salida de la aplicación -->
     <div class="rounded-lg border border-gray-800 bg-gray-900/50 overflow-hidden mb-6">
         <div class="px-6 py-4 border-b border-gray-800">
-            <h2 class="text-xl font-semibold">Logs de Salida de la Aplicación</h2>
+            <h2 class="text-xl font-semibold">Application Output Logs</h2>
         </div>
         <div class="p-6">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -298,16 +298,16 @@
                     <div class="flex justify-between items-center mb-3">
                         <h3 class="text-lg font-medium flex items-center gap-2">
                             <i data-lucide="terminal" class="w-5 h-5 text-blue-400"></i>
-                            <span>Salida Estándar (stdout)</span>
+                            <span>Standard Output (stdout)</span>
                         </h3>
                         <a href="/api/applications/{{ application.id }}/output-logs/download?log_type=stdout" 
                            class="px-3 py-1 rounded-md bg-blue-900/20 hover:bg-blue-900/30 text-blue-400 border border-blue-900/20 flex items-center gap-2 transition-colors">
                             <i data-lucide="download" class="w-4 h-4"></i>
-                            <span>Descargar</span>
+                            <span>Download</span>
                         </a>
                     </div>
                     <p class="text-sm text-gray-400 mb-2">
-                        Contiene los mensajes y output normal de la aplicación.
+                        Contains the normal messages and output of the application.
                     </p>
                     <div class="bg-gray-800 p-2 rounded text-xs text-gray-300 font-mono">
                         {{ application.directory }}/logs/stdout.log
@@ -319,16 +319,16 @@
                     <div class="flex justify-between items-center mb-3">
                         <h3 class="text-lg font-medium flex items-center gap-2">
                             <i data-lucide="alert-triangle" class="w-5 h-5 text-red-400"></i>
-                            <span>Salida de Error (stderr)</span>
+                            <span>Error Output (stderr)</span>
                         </h3>
                         <a href="/api/applications/{{ application.id }}/output-logs/download?log_type=stderr" 
                            class="px-3 py-1 rounded-md bg-red-900/20 hover:bg-red-900/30 text-red-400 border border-red-900/20 flex items-center gap-2 transition-colors">
                             <i data-lucide="download" class="w-4 h-4"></i>
-                            <span>Descargar</span>
+                            <span>Download</span>
                         </a>
                     </div>
                     <p class="text-sm text-gray-400 mb-2">
-                        Contiene mensajes de error, excepciones y advertencias.
+                        Contains error messages, exceptions, and warnings.
                     </p>
                     <div class="bg-gray-800 p-2 rounded text-xs text-gray-300 font-mono">
                         {{ application.directory }}/logs/stderr.log
@@ -343,22 +343,22 @@
 <div id="deleteModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-50 hidden">
     <div class="bg-gray-900 rounded-lg border border-gray-800 max-w-md w-full p-6 m-4">
         <div class="flex justify-between items-center mb-4">
-            <h3 class="text-xl font-bold text-white">Confirmar Eliminación</h3>
+            <h3 class="text-xl font-bold text-white">Confirm Deletion</h3>
             <button type="button" onclick="document.getElementById('deleteModal').classList.add('hidden')" class="text-gray-400 hover:text-white">
                 <i data-lucide="x" class="w-5 h-5"></i>
             </button>
         </div>
         <div class="mb-6">
-            <p class="mb-2">¿Estás seguro de que deseas eliminar la aplicación <strong>{{ application.name }}</strong>?</p>
-            <p class="text-red-400 text-sm">Esta acción no se puede deshacer.</p>
+            <p class="mb-2">Are you sure you want to delete the application <strong>{{ application.name }}</strong>?</p>
+            <p class="text-red-400 text-sm">This action cannot be undone.</p>
         </div>
         <div class="flex justify-end gap-3">
             <button type="button" onclick="document.getElementById('deleteModal').classList.add('hidden')" class="px-4 py-2 rounded-md border border-gray-700 text-gray-300 hover:bg-gray-800 transition-colors">
-                Cancelar
+                Cancel
             </button>
             <form action="/applications/{{ application.id }}/delete" method="post">
                 <button type="submit" class="px-4 py-2 rounded-md bg-red-700/30 hover:bg-red-700/40 text-red-400 border border-red-700/30 transition-colors">
-                    Eliminar Aplicación
+                    Delete Application
                 </button>
             </form>
         </div>
@@ -388,7 +388,7 @@
             resultDiv.innerHTML = `
                 <div class="p-6 text-center">
                     <i data-lucide="loader-2" class="w-8 h-8 mx-auto mb-3 animate-spin text-purple-400"></i>
-                    <p class="text-gray-300">Verificando migraciones...</p>
+                    <p class="text-gray-300">Checking migrations...</p>
                 </div>
             `;
             resultDiv.classList.remove('hidden');
@@ -399,7 +399,7 @@
             fetch('/api/applications/{{ application.id }}/django-migrations')
                 .then(response => {
                     if (!response.ok) {
-                        throw new Error('Error al verificar migraciones');
+                        throw new Error('Error checking migrations');
                     }
                     return response.json();
                 })
@@ -418,7 +418,7 @@
                         let html = `
                             <div class="border border-gray-700 rounded-lg overflow-hidden">
                                 <div class="px-4 py-3 bg-gray-800 flex justify-between items-center">
-                                    <h3 class="font-medium">Estado de Migraciones</h3>
+                                    <h3 class="font-medium">Migration Status</h3>
                                     <span class="px-3 py-1 rounded-full ${data.pending_count === 0 ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'}">
                                         ${data.status}
                                     </span>

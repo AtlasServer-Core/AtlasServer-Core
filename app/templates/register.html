@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AtlasServer - Registro</title>
+    <title>AtlasServer - Registration</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
@@ -55,9 +55,9 @@
                     <div class="logo-icon">AS</div>
                     <h1 class="text-3xl font-bold text-center">AtlasServer</h1>
                     {% if is_first_run %}
-                    <p class="text-gray-400 mt-2">Configuración inicial del administrador</p>
+                    <p class="text-gray-400 mt-2">Administrator Initial Setup</p>
                     {% else %}
-                    <p class="text-gray-400 mt-2">Crear una nueva cuenta</p>
+                    <p class="text-gray-400 mt-2">Create a new account</p>
                     {% endif %}
                 </div>
                 
@@ -74,14 +74,14 @@
                 <div class="mb-6 p-4 rounded-md bg-blue-500/10 border border-blue-500/30 text-blue-400 flex gap-3 items-start">
                     <i data-lucide="info" class="w-5 h-5 flex-shrink-0 mt-0.5"></i>
                     <div>
-                        <p>¡Bienvenido a AtlasServer! Este es el primer inicio. Por favor, crea una cuenta de administrador.</p>
+                        <p>Welcome to AtlasServer! This is your first login. Please create an administrator account.</p>
                     </div>
                 </div>
                 {% endif %}
                 
                 <form action="/register" method="post" class="space-y-6">
                     <div class="space-y-2">
-                        <label for="username" class="block text-sm font-medium text-gray-300">Nombre de Usuario</label>
+                        <label for="username" class="block text-sm font-medium text-gray-300">Username</label>
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <i data-lucide="user" class="w-5 h-5 text-gray-500"></i>
@@ -91,14 +91,14 @@
                                 id="username" 
                                 name="username" 
                                 class="pl-10 w-full px-4 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none" 
-                                placeholder="Elige un nombre de usuario" 
+                                placeholder="Choose a username" 
                                 required
                             >
                         </div>
                     </div>
                     
                     <div class="space-y-2">
-                        <label for="password" class="block text-sm font-medium text-gray-300">Contraseña</label>
+                        <label for="password" class="block text-sm font-medium text-gray-300">Password</label>
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <i data-lucide="lock" class="w-5 h-5 text-gray-500"></i>
@@ -108,14 +108,14 @@
                                 id="password" 
                                 name="password" 
                                 class="pl-10 w-full px-4 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none" 
-                                placeholder="Crea una contraseña segura" 
+                                placeholder="Create a secure password" 
                                 required
                             >
                         </div>
                     </div>
                     
                     <div class="space-y-2">
-                        <label for="password_confirm" class="block text-sm font-medium text-gray-300">Confirmar Contraseña</label>
+                        <label for="password_confirm" class="block text-sm font-medium text-gray-300">Confirm Password</label>
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <i data-lucide="lock" class="w-5 h-5 text-gray-500"></i>
@@ -125,7 +125,7 @@
                                 id="password_confirm" 
                                 name="password_confirm" 
                                 class="pl-10 w-full px-4 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none" 
-                                placeholder="Repite tu contraseña" 
+                                placeholder="Repeat your password" 
                                 required
                             >
                         </div>
@@ -141,10 +141,10 @@
                         >
                         <div>
                             <label for="allow_registration" class="text-sm font-medium text-gray-300">
-                                Permitir registro de nuevos usuarios
+                                Allow registration of new users
                             </label>
                             <p class="text-xs text-gray-400">
-                                Si se habilita, otros usuarios podrán registrarse en AtlasServer.
+                                If enabled, other users will be able to register in AtlasServer.
                             </p>
                         </div>
                     </div>
@@ -154,13 +154,13 @@
                     
                     <button type="submit" class="w-full px-4 py-3 rounded-md bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center justify-center gap-2">
                         <i data-lucide="user-plus" class="w-5 h-5"></i>
-                        <span>{% if is_first_run %}Crear Cuenta de Administrador{% else %}Registrarse{% endif %}</span>
+                        <span>{% if is_first_run %}Create Administrator Account{% else %}Register{% endif %}</span>
                     </button>
                 </form>
                 
                 {% if not is_first_run %}
                 <div class="mt-6 text-center text-sm text-gray-400">
-                    <p>¿Ya tienes cuenta? <a href="/login" class="text-blue-400 hover:underline">Iniciar sesión</a></p>
+                    <p>Already have an account? <a href="/login" class="text-blue-400 hover:underline">Log in</a></p>
                 </div>
                 {% endif %}
             </div>
@@ -185,7 +185,7 @@
             form.addEventListener('submit', function(event) {
                 if (password.value !== confirmPassword.value) {
                     event.preventDefault();
-                    alert('Las contraseñas no coinciden. Por favor, inténtalo de nuevo.');
+                    alert('Passwords do not match. Please try again.');
                     confirmPassword.focus();
                 }
             });

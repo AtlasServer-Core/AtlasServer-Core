@@ -6,8 +6,8 @@
 {% block content %}
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="mb-8">
-        <h1 class="text-4xl font-bold mb-2">Panel de Control</h1>
-        <p class="text-xl text-gray-400">Gestiona tus aplicaciones Flask y FastAPI desde un solo lugar.</p>
+        <h1 class="text-4xl font-bold mb-2">Control Panel</h1>
+        <p class="text-xl text-gray-400">Manage your Flask, Django and FastAPI applications from a single place.</p>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -16,7 +16,7 @@
             <div class="flex justify-between items-start">
                 <div>
                     <h2 class="text-3xl font-bold mb-1">{{ applications|length }}</h2>
-                    <p class="text-gray-400">Aplicaciones Registradas</p>
+                    <p class="text-gray-400">Registered Applications</p>
                 </div>
                 <div class="p-2 rounded-lg bg-blue-500/10 text-blue-400">
                     <i data-lucide="apps" class="w-6 h-6"></i>
@@ -29,7 +29,7 @@
             <div class="flex justify-between items-start">
                 <div>
                     <h2 class="text-3xl font-bold mb-1">{{ applications|selectattr('status', 'equalto', 'running')|list|length }}</h2>
-                    <p class="text-gray-400">Aplicaciones Activas</p>
+                    <p class="text-gray-400">Active Applications</p>
                 </div>
                 <div class="p-2 rounded-lg bg-green-500/10 text-green-400">
                     <i data-lucide="play" class="w-6 h-6"></i>
@@ -42,7 +42,7 @@
             <div class="flex justify-between items-start">
                 <div>
                     <h2 class="text-3xl font-bold mb-1">{{ applications|selectattr('status', 'equalto', 'stopped')|list|length }}</h2>
-                    <p class="text-gray-400">Aplicaciones Inactivas</p>
+                    <p class="text-gray-400">Inactive Applications</p>
                 </div>
                 <div class="p-2 rounded-lg bg-gray-500/10 text-gray-400">
                     <i data-lucide="pause" class="w-6 h-6"></i>
@@ -55,7 +55,7 @@
             <div class="flex justify-between items-start">
                 <div>
                     <h2 class="text-3xl font-bold mb-1">{{ applications|selectattr('status', 'equalto', 'error')|list|length }}</h2>
-                    <p class="text-gray-400">Aplicaciones con Error</p>
+                    <p class="text-gray-400">Applications with Error</p>
                 </div>
                 <div class="p-2 rounded-lg bg-red-500/10 text-red-400">
                     <i data-lucide="alert-triangle" class="w-6 h-6"></i>
@@ -67,10 +67,10 @@
     <div class="mb-8">
         <div class="rounded-lg border border-gray-800 bg-gray-900/50 overflow-hidden">
             <div class="p-4 border-b border-gray-800 flex justify-between items-center">
-                <h2 class="text-xl font-semibold">Aplicaciones Registradas</h2>
+                <h2 class="text-xl font-semibold">Registered Applications</h2>
                 <a href="/applications/new" class="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center gap-2">
                     <i data-lucide="plus" class="w-4 h-4"></i>
-                    <span>Nueva Aplicación</span>
+                    <span>New App</span>
                 </a>
             </div>
             
@@ -79,12 +79,12 @@
                 <table class="w-full">
                     <thead class="bg-gray-800/50 text-left">
                         <tr>
-                            <th class="px-4 py-3 text-gray-400 font-medium">Estado</th>
-                            <th class="px-4 py-3 text-gray-400 font-medium">Nombre</th>
-                            <th class="px-4 py-3 text-gray-400 font-medium">Tipo</th>
-                            <th class="px-4 py-3 text-gray-400 font-medium">Puerto</th>
-                            <th class="px-4 py-3 text-gray-400 font-medium">Directorio</th>
-                            <th class="px-4 py-3 text-gray-400 font-medium text-right">Acciones</th>
+                            <th class="px-4 py-3 text-gray-400 font-medium">Status</th>
+                            <th class="px-4 py-3 text-gray-400 font-medium">Name</th>
+                            <th class="px-4 py-3 text-gray-400 font-medium">Type</th>
+                            <th class="px-4 py-3 text-gray-400 font-medium">Port</th>
+                            <th class="px-4 py-3 text-gray-400 font-medium">Directory</th>
+                            <th class="px-4 py-3 text-gray-400 font-medium text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-800">
@@ -92,9 +92,9 @@
                         <tr class="hover:bg-white/5 transition-colors">
                             <td class="px-4 py-3">
                                 {% if app.status == "running" %}
-                                <span class="status-indicator running" title="Ejecutando"></span>
+                                <span class="status-indicator running" title="Running"></span>
                                 {% elif app.status == "stopped" %}
-                                <span class="status-indicator stopped" title="Detenido"></span>
+                                <span class="status-indicator stopped" title="Stopped"></span>
                                 {% elif app.status == "error" %}
                                 <span class="status-indicator error" title="Error"></span>
                                 {% else %}
@@ -113,25 +113,25 @@
                                 <span class="px-3 py-1 rounded-full bg-gray-500/10 text-gray-400 text-xs border border-gray-500/20">{{ app.app_type }}</span>
                                 {% endif %}
                             </td>
-                            <td class="px-4 py-3">{{ app.port or 'No asignado' }}</td>
+                            <td class="px-4 py-3">{{ app.port or 'Not assigned' }}</td>
                             <td class="px-4 py-3">
                                 <span class="px-2 py-1 bg-gray-800 rounded text-gray-300 text-sm font-mono">{{ app.directory }}</span>
                             </td>
                             <td class="px-4 py-3 text-right">
                                 <div class="flex items-center justify-end gap-2">
-                                    <a href="/applications/{{ app.id }}" class="p-1 rounded-md bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white transition-colors" title="Ver detalles">
+                                    <a href="/applications/{{ app.id }}" class="p-1 rounded-md bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white transition-colors" title="View details">
                                         <i data-lucide="eye" class="w-5 h-5"></i>
                                     </a>
                                     
                                     {% if app.status == "running" %}
                                     <form action="/applications/{{ app.id }}/stop" method="post" class="inline">
-                                        <button type="submit" class="p-1 rounded-md bg-gray-800 hover:bg-gray-700 text-yellow-400 hover:text-yellow-300 transition-colors" title="Detener">
+                                        <button type="submit" class="p-1 rounded-md bg-gray-800 hover:bg-gray-700 text-yellow-400 hover:text-yellow-300 transition-colors" title="Stop">
                                             <i data-lucide="square" class="w-5 h-5"></i>
                                         </button>
                                     </form>
                                     {% elif app.status in ["stopped", "error"] %}
                                     <form action="/applications/{{ app.id }}/start" method="post" class="inline">
-                                        <button type="submit" class="p-1 rounded-md bg-gray-800 hover:bg-gray-700 text-green-400 hover:text-green-300 transition-colors" title="Iniciar">
+                                        <button type="submit" class="p-1 rounded-md bg-gray-800 hover:bg-gray-700 text-green-400 hover:text-green-300 transition-colors" title="Start">
                                             <i data-lucide="play" class="w-5 h-5"></i>
                                         </button>
                                     </form>
@@ -140,8 +140,8 @@
                                     <form action="/applications/{{ app.id }}/delete" method="post" class="inline">
                                         <button type="submit" 
                                                 class="p-1 rounded-md bg-gray-800 hover:bg-gray-700 text-red-400 hover:text-red-300 transition-colors" 
-                                                title="Eliminar"
-                                                onclick="return confirm('¿Estás seguro de eliminar esta aplicación?')">
+                                                title="Delete"
+                                                onclick="return confirm('Are you sure you want to delete this application?')">
                                             <i data-lucide="trash-2" class="w-5 h-5"></i>
                                         </button>
                                     </form>
@@ -157,11 +157,11 @@
                 <div class="inline-flex p-4 rounded-full bg-gray-800/50 mb-4">
                     <i data-lucide="layout-grid" class="w-10 h-10 text-gray-400"></i>
                 </div>
-                <h3 class="text-2xl font-semibold mb-2">No hay aplicaciones registradas</h3>
-                <p class="text-gray-400 mb-6">Comienza registrando tu primera aplicación</p>
+                <h3 class="text-2xl font-semibold mb-2">No registered applications</h3>
+                <p class="text-gray-400 mb-6">Start by registering your first application</p>
                 <a href="/applications/new" class="px-6 py-3 rounded-md bg-blue-600 hover:bg-blue-700 text-white transition-colors inline-flex items-center gap-2">
                     <i data-lucide="plus-circle" class="w-5 h-5"></i>
-                    <span>Registrar Nueva Aplicación</span>
+                    <span>Register New Application</span>
                 </a>
             </div>
             {% endif %}
