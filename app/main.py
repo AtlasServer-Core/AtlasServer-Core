@@ -11,7 +11,7 @@ import json
 import tempfile
 import csv
 import io
-import aiofiles
+import pathlib
 import asyncio
 from starlette.background import BackgroundTask
 import uvicorn
@@ -28,9 +28,13 @@ app = FastAPI(title="Panel de Administración de Aplicaciones")
 
 NGROK_CONFIG_FILE = "ngrok_config.json"
 
+package_dir = pathlib.Path(__file__).parent.absolute()
+static_dir = os.path.join(package_dir, "static")
+templates_dir = os.path.join(package_dir, "templates")
+
 # Configuración de plantillas y archivos estáticos
-templates = Jinja2Templates(directory="app/templates")
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+templates = Jinja2Templates(directory=templates_dir)
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 # Modelos de Pydantic para validación
 class ApplicationCreate(BaseModel):

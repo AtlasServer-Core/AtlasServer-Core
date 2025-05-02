@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# cli.py
+# app/cli.py
 import click
 import os
 import sys
@@ -10,12 +10,13 @@ import json
 import psutil
 from sqlalchemy.orm import Session
 
-# Aseguramos que la ruta del proyecto esté en el path
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+# Ya no necesitamos agregar el path del proyecto, pues ahora estamos
+# dentro del paquete instalado
+# Importamos los módulos directamente
 
 # Importamos módulos del proyecto
 from app.process_manager import get_db, Application, ProcessManager
-
+from app.process_manager import engine
 
 SERVER_PID_FILE = "atlas_server.pid"
 
@@ -39,25 +40,25 @@ def get_server_pid():
 
 @click.group()
 def cli():
-    """AtlasServer - CLI para administrar el servidor y aplicaciones."""
+    """AtlasServer - CLI for managing the server and applications."""
     pass
 
 
 @cli.command("start")
-@click.option("--host", default="0.0.0.0", help="Host del servidor")
-@click.option("--port", default=5000, help="Puerto del servidor")
-@click.option("--reload", is_flag=True, help="Activar recarga automática")
+@click.option("--host", default="0.0.0.0", help="Server host")
+@click.option("--port", default=5000, help="Server port")
+@click.option("--reload", is_flag=True, help="Enable automatic reload")
 def start_server(host, port, reload):
-    """Iniciar el servidor AtlasServer."""
+    """Start the AtlasServer service."""
     pid = get_server_pid()
     if pid:
-        click.echo(f"⚠️ El servidor ya está en ejecución (PID: {pid})")
+        click.echo(f"⚠️ Server is already running (PID: {pid})")
         return
 
     reload_flag = "--reload" if reload else ""
     
     cmd = f"uvicorn app.main:app --host {host} --port {port} {reload_flag}"
-    click.echo(f"🚀 Iniciando AtlasServer en {host}:{port}...")
+    click.echo(f"🚀 Starting AtlasServer on {host}:{port}...")
     
     # Iniciar servidor como proceso independiente
     process = subprocess.Popen(
@@ -75,20 +76,19 @@ def start_server(host, port, reload):
     # Esperar un poco para ver si inicia correctamente
     time.sleep(2)
     if process.poll() is None:
-        click.echo(f"✅ AtlasServer iniciado correctamente (PID: {process.pid})")
-        click.echo(f"📌 Accede a http://{host}:{port}")
+        click.echo(f"✅ AtlasServer started successfully (PID: {process.pid})")
+        click.echo(f"📌 Access at http://{host}:{port}")
     else:
-        click.echo("❌ Error al iniciar AtlasServer")
+        click.echo("❌ Error starting AtlasServer")
         stdout, stderr = process.communicate()
         click.echo(stderr.decode())
-
 
 @cli.command("stop")
 def stop_server():
     """Detener el servidor AtlasServer."""
     pid = get_server_pid()
     if not pid:
-        click.echo("⚠️ AtlasServer no está en ejecución")
+        click.echo("⚠️ AtlasServer is not running")
         return
     
     try:
@@ -113,9 +113,9 @@ def stop_server():
         if os.path.exists(SERVER_PID_FILE):
             os.remove(SERVER_PID_FILE)
             
-        click.echo("✅ AtlasServer detenido correctamente")
+        click.echo("✅ AtlasServer stopped successfully")
     except Exception as e:
-        click.echo(f"❌ Error al detener AtlasServer: {str(e)}")
+        click.echo(f"❌ Error stopping AtlasServer: {str(e)}")
 
 
 @cli.command("status")
@@ -128,17 +128,17 @@ def server_status():
             mem = process.memory_info().rss / (1024 * 1024)
             cpu = process.cpu_percent(interval=0.1)
             
-            click.echo(f"✅ AtlasServer está en ejecución")
+            click.echo(f"✅ AtlasServer is running")
             click.echo(f"   PID: {pid}")
-            click.echo(f"   Memoria: {mem:.2f} MB")
+            click.echo(f"   Memory: {mem:.2f} MB")
             click.echo(f"   CPU: {cpu:.1f}%")
-            click.echo(f"   Tiempo activo: {time.time() - process.create_time():.0f} segundos")
+            click.echo(f"   Uptime: {time.time() - process.create_time():.0f} seconds")
         except psutil.NoSuchProcess:
-            click.echo("⚠️ El archivo PID existe pero el proceso no está en ejecución")
+            click.echo("⚠️ PID file exists but the process is not running")
             if os.path.exists(SERVER_PID_FILE):
                 os.remove(SERVER_PID_FILE)
     else:
-        click.echo("❌ AtlasServer no está en ejecución")
+        click.echo("❌ AtlasServer is not running")
 
 
 # Grupo de comandos para aplicaciones
@@ -156,11 +156,11 @@ def list_apps():
         apps = db.query(Application).all()
         
         if not apps:
-            click.echo("No hay aplicaciones registradas")
+            click.echo("No registered applications")
             return
         
-        click.echo("\n📋 Aplicaciones registradas:")
-        click.echo("ID | Nombre | Estado | Tipo | Puerto | PID")
+        click.echo("\n📋 Registered applications:")
+        click.echo("ID | Name | State | Type | Port | PID")
         click.echo("-" * 60)
         
         for app in apps:
@@ -180,21 +180,21 @@ def start_app(app_id):
         app = db.query(Application).filter(Application.id == app_id).first()
         
         if not app:
-            click.echo(f"❌ Aplicación con ID {app_id} no encontrada")
+            click.echo(f"❌ Application with ID {app_id} not found")
             return
         
-        click.echo(f"🚀 Iniciando aplicación '{app.name}'...")
+        click.echo(f"🚀 Starting application '{app.name}'...")
         result = process_manager.start_application(app_id)
         
         if result:
             app = db.query(Application).filter(Application.id == app_id).first()
-            click.echo(f"✅ Aplicación iniciada correctamente")
-            click.echo(f"   Puerto: {app.port}")
+            click.echo(f"✅ Application started successfully")
+            click.echo(f"   Port: {app.port}")
             click.echo(f"   PID: {app.pid}")
             if app.ngrok_url:
-                click.echo(f"   URL pública: {app.ngrok_url}")
+                click.echo(f"   Public URL: {app.ngrok_url}")
         else:
-            click.echo("❌ Error al iniciar la aplicación")
+            click.echo("❌ Error starting application")
     finally:
         db.close()
 
@@ -209,16 +209,16 @@ def stop_app(app_id):
         app = db.query(Application).filter(Application.id == app_id).first()
         
         if not app:
-            click.echo(f"❌ Aplicación con ID {app_id} no encontrada")
+            click.echo(f"❌ Application with ID {app_id} not found")
             return
         
-        click.echo(f"🛑 Deteniendo aplicación '{app.name}'...")
+        click.echo(f"🛑 Stopping application '{app.name}'...")
         result = process_manager.stop_application(app_id)
         
         if result:
-            click.echo(f"✅ Aplicación detenida correctamente")
+            click.echo(f"✅ Application stopped successfully")
         else:
-            click.echo("❌ Error al detener la aplicación")
+            click.echo("❌ Error stopping application")
     finally:
         db.close()
 
@@ -233,19 +233,19 @@ def restart_app(app_id):
         app = db.query(Application).filter(Application.id == app_id).first()
         
         if not app:
-            click.echo(f"❌ Aplicación con ID {app_id} no encontrada")
+            click.echo(f"❌ Application with ID {app_id} not found")
             return
         
-        click.echo(f"🔄 Reiniciando aplicación '{app.name}'...")
+        click.echo(f"🔄 Restarting application '{app.name}'...")
         result = process_manager.restart_application(app_id)
         
         if result:
             app = db.query(Application).filter(Application.id == app_id).first()
-            click.echo(f"✅ Aplicación reiniciada correctamente")
-            click.echo(f"   Puerto: {app.port}")
+            click.echo(f"✅ Application restarted successfully")
+            click.echo(f"   Port: {app.port}")
             click.echo(f"   PID: {app.pid}")
         else:
-            click.echo("❌ Error al reiniciar la aplicación")
+            click.echo("❌ Error restarting application")
     finally:
         db.close()
 
@@ -259,25 +259,25 @@ def app_info(app_id):
         app = db.query(Application).filter(Application.id == app_id).first()
         
         if not app:
-            click.echo(f"❌ Aplicación con ID {app_id} no encontrada")
+            click.echo(f"❌ Application with ID {app_id} not found")
             return
         
         status_icon = "🟢" if app.status == "running" else "⚪" if app.status == "stopped" else "🔴"
         
-        click.echo(f"\n📌 Información de '{app.name}':")
+        click.echo(f"\n📌 Information for '{app.name}':")
         click.echo(f"   ID: {app.id}")
-        click.echo(f"   Estado: {status_icon} {app.status}")
-        click.echo(f"   Tipo: {app.app_type}")
-        click.echo(f"   Puerto: {app.port or 'No asignado'}")
+        click.echo(f"   Status: {status_icon} {app.status}")
+        click.echo(f"   Type: {app.app_type}")
+        click.echo(f"   Port: {app.port or 'Not assigned'}")
         click.echo(f"   PID: {app.pid or 'N/A'}")
-        click.echo(f"   Directorio: {app.directory}")
-        click.echo(f"   Archivo principal: {app.main_file}")
-        click.echo(f"   Creada: {app.created_at}")
+        click.echo(f"   Directory: {app.directory}")
+        click.echo(f"   Main file: {app.main_file}")
+        click.echo(f"   Created: {app.created_at}")
         
         if app.ngrok_enabled:
-            click.echo(f"   Ngrok habilitado: Sí")
+            click.echo(f"   Ngrok enabled: Yes")
             if app.ngrok_url:
-                click.echo(f"   URL pública: {app.ngrok_url}")
+                click.echo(f"   Public URL: {app.ngrok_url}")
         
         if app.status == "running" and app.pid:
             try:
@@ -285,12 +285,12 @@ def app_info(app_id):
                 mem = process.memory_info().rss / (1024 * 1024)
                 cpu = process.cpu_percent(interval=0.1)
                 
-                click.echo(f"\n   Rendimiento:")
-                click.echo(f"   - Memoria: {mem:.2f} MB")
+                click.echo(f"\n   Performance:")
+                click.echo(f"   - Memory: {mem:.2f} MB")
                 click.echo(f"   - CPU: {cpu:.1f}%")
-                click.echo(f"   - Tiempo activo: {time.time() - process.create_time():.0f} segundos")
+                click.echo(f"   - Uptime: {time.time() - process.create_time():.0f} seconds")
             except psutil.NoSuchProcess:
-                click.echo(f"\n   ⚠️ El PID existe pero el proceso no está en ejecución")
+                click.echo(f"\n   ⚠️ PID exists but the process is not running")
     finally:
         db.close()
 

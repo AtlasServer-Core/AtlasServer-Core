@@ -1,0 +1,74 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "atlasserver"
+version = "0.1.0"
+description = "Fast Deploy Manager for demo apps made with Flask, FastAPI, and Django"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "Apache License 2.0"}
+authors = [
+    {name = "AtlasServer-Core / Fredy", email = "riveraaai200678@gmail.com"}
+]
+keywords = [
+    "flask", 
+    "fastapi",
+    "django", 
+    "deploy", 
+    "demo"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Environment :: Web Environment",
+    "Topic :: Software Development :: Build Tools",
+]
+dependencies = [
+    "Flask",
+    "Werkzeug",
+    "Jinja2",
+    "bcrypt==4.0.1",
+    "passlib",
+    "fastapi",
+    "uvicorn",
+    "waitress",
+    "sqlalchemy",
+    "psutil",
+    "pydantic",
+    "python-multipart",
+    "pyngrok",
+    "aiofiles",
+    "gunicorn",
+    "click>=8.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "black",
+    "isort",
+    "mypy",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/AtlasServer-Core/AtlasServer-Core"
+"Issues" = "https://github.com/AtlasServer-Core/AtlasServer-Core/issues"
+
+[project.scripts]
+atlasserver = "app.cli:cli"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["app", "app.*"]
+
+[tool.setuptools.package-data]
+"app" = ["templates/**/*", "static/**/*"]
