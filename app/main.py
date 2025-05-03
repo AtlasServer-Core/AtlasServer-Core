@@ -1343,7 +1343,7 @@ def config_page(request: Request, current_user: User = Depends(login_required), 
 # Ok, esto funciona si lo dejo aqui, es poco intuitivo pero funciona
 app.add_middleware(
     SessionMiddleware,
-    secret_key="ajajdhydu",  # Cambia esto a una clave segura en producción
+    secret_key="c8ed38188cb8951c04cd37129a029e88",  # Cambia esto a una clave segura en producción
     session_cookie="atlasserver_session",
     max_age=60 * 60 * 24 * 7  # 7 días
 )
