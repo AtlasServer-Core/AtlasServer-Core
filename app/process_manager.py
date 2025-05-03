@@ -45,10 +45,29 @@ def check_port_available(port):
     with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
         return sock.connect_ex(('localhost', port)) != 0
 
-def find_available_port(start_port=8000, end_port=9000):
+def is_port_assigned_in_db(db: Session, port: int, exclude_app_id: int = None):
+    """
+    Verifica si un puerto ya está asignado a alguna aplicación en la base de datos,
+    excluyendo opcionalmente una aplicación específica.
+    """
+    query = db.query(Application).filter(Application.port == port)
+    
+    if exclude_app_id is not None:
+        query = query.filter(Application.id != exclude_app_id)
+    
+    return query.count() > 0
+
+def find_available_port(db: Session, start_port=8000, end_port=9000, exclude_app_id: int = None):
+    """
+    Encuentra un puerto disponible que no esté en uso en el sistema
+    y que no esté asignado a ninguna otra aplicación en la base de datos.
+    """
     for port in range(start_port, end_port):
+        # Verificar si el puerto está disponible a nivel del sistema
         if check_port_available(port):
-            return port
+            # Verificar si el puerto ya está asignado en la base de datos
+            if not is_port_assigned_in_db(db, port, exclude_app_id):
+                return port
     return None
 
 class Application(Base):
@@ -199,15 +218,15 @@ class ProcessManager:
         
         # Asignar un puerto si no tiene uno
         if not application.port:
-            port = find_available_port()
+            port = find_available_port(self.db, exclude_app_id=app_id)
             if not port:
                 self._add_log(app_id, "No se encontraron puertos disponibles", "error")
                 return False
             application.port = port
         
         # Verificar que el puerto sigue disponible
-        if not find_available_port(application.port, application.port + 1):
-            new_port = find_available_port()
+        if not check_port_available(application.port):
+            new_port = find_available_port(self.db, exclude_app_id=app_id)
             if not new_port:
                 self._add_log(app_id, "No se encontraron puertos disponibles", "error")
                 return False

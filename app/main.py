@@ -1006,7 +1006,7 @@ def create_application_form(
         
         # Asignar un puerto si no se proporciona
         if not port:
-            port = find_available_port()
+            port = find_available_port(db=db)
             if not port:
                 return templates.TemplateResponse(
                     "new_application.html", 
