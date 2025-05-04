@@ -23,19 +23,18 @@
     <em>From developers to developers.</em>
   </p>
 
+  <p align="center">
+    <img
+      src="https://atlasserver.vercel.app/static/img/panel-screenshot.png"
+      alt="AtlasServer Dashboard"
+      width="80%"
+    />
+  </p>
+
   <!-- Divider -->
   <hr style="width: 50px; border: 2px solid #2d3748; margin: 1.5em auto;" />
 
 </div>
-
-<p align="center">
-  <img
-    src="https://atlasserver.vercel.app/static/img/panel-screenshot.png"
-    alt="AtlasServer Dashboard"
-    width="80%"
-  />
-</p>
-
 
 
 
