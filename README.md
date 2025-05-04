@@ -28,6 +28,11 @@
 
 </div>
 
+<p align="center">
+  <img href="https://atlasserver.vercel.app/static/img/panel-screenshot.png" alt="AtlasServer Dashboard" width="80%"/>
+</p>
+
+
 
 ### ⚙️ Current Features
 
