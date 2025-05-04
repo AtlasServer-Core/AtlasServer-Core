@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "atlasserver"
-version = "0.1.2"
+version = "0.1.3"
 description = "Fast Deploy Manager for demo apps made with Flask, FastAPI, and Django"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -47,6 +47,7 @@ dependencies = [
     "aiofiles",
     "gunicorn",
     "click>=8.0.0",
+    "platformdirs",
 ]
 
 [project.optional-dependencies]

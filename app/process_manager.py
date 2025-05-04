@@ -16,8 +16,13 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import sys
+from platformdirs import user_data_dir
 
-DATABASE_URL = "sqlite:///./applications.db"
+# Obtener la ruta para los datos de la aplicación
+data_dir = user_data_dir("atlasserver", "AtlasServer-Core")
+os.makedirs(data_dir, exist_ok=True)
+
+DATABASE_URL = f"sqlite:///{os.path.join(data_dir, 'applications.db')}"
 engine = create_engine(
     DATABASE_URL, 
     connect_args={"check_same_thread": False},
@@ -365,7 +370,7 @@ class ProcessManager:
         
         
     
-    def get_local_ip():
+    def get_local_ip(self):
         import socket
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         try:
