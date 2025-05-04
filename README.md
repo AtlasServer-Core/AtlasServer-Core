@@ -23,6 +23,14 @@
     <em>From developers to developers.</em>
   </p>
 
+  <!-- PyPI and GitHub Badges -->
+  <p align="center">
+    <a href="https://pypi.org/project/atlasserver/"><img src="https://img.shields.io/pypi/v/atlasserver.svg" alt="PyPI Version"></a>
+    <a href="https://pypi.org/project/atlasserver/"><img src="https://img.shields.io/pypi/pyversions/atlasserver.svg" alt="Python Versions"></a>
+    <a href="https://github.com/AtlasServer-Core/AtlasServer-Core/"><img src="https://img.shields.io/github/stars/AtlasServer-Core/AtlasServer-Core.svg" alt="GitHub Stars"></a>
+    <a href="https://github.com/AtlasServer-Core/AtlasServer-Core/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" alt="License"></a>
+  </p>
+
   <p align="center">
     <img
       src="https://atlasserver.vercel.app/static/img/panel-screenshot.png"
@@ -52,17 +60,16 @@
 ### 🚀 Quick Start
 
 ```bash
-# Clone the repository
-git clone https://github.com/AtlasServer-Core/AtlasServer-Core.git
-cd AtlasServer-Core
-
-# Install AtlasServer
-pip install .
+# Install AtlasServer from PyPI
+pip install atlasserver
 
 # Start the server
 atlasserver start
 
-# List all applications
+# Access the web interface at http://localhost:5000
+# Default credentials: Create your own admin account on first run
+
+# List all applications from CLI
 atlasserver app list
 ```
 
@@ -84,12 +91,25 @@ atlasserver app restart APP_ID # Restart an application
 atlasserver app info APP_ID    # Show application details
 ```
 
+### 🔧 Development Installation
+
+If you want to contribute to AtlasServer or install from source:
+
+```bash
+# Clone the repository
+git clone https://github.com/AtlasServer-Core/AtlasServer-Core.git
+cd AtlasServer-Core
+
+# Install in development mode
+pip install -e .
+```
+
 ---
 
 
 ### 📢 Join the Beta
 
-We’re running a **3–4 week closed beta** to refine usability, tunnel stability, and overall workflow.
+We're running a **3–4 week closed beta** to refine usability, tunnel stability, and overall workflow.
 
 👉 **Join our Discord** for beta access, discussions, and direct feedback:
 
