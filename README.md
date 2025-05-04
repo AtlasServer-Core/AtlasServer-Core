@@ -4,7 +4,7 @@
   <!-- Logo -->
   <div align="center" style="background-color: #000; padding: 1em; display: inline-block; border-radius: 8px;">
      <img
-       src="app/static/svg/atlas.svg"
+       src="https://atlasserver.vercel.app/static/svg/atlas.svg"
        alt="AtlasServer Logo"
        width="200"
        style="display: block;"
