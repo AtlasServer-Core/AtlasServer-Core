@@ -134,7 +134,7 @@ See the [full license text](LICENSE) for details.
 
 ## Star History
 
-<iframe style="width:100%;height:auto;min-width:600px;min-height:400px;" src="https://www.star-history.com/embed?secret=Z2hwX2lENVFBNWxKMlN1NGZqMWVIYmZZaHpBYTNGYTFqaDJtUXN5Tw==#AtlasServer-Core/AtlasServer-Core&Date" frameBorder="0"></iframe>
+[![Star History Chart](https://api.star-history.com/svg?repos=AtlasServer-Core/AtlasServer-Core&type=Date)](https://www.star-history.com/#AtlasServer-Core/AtlasServer-Core&Date)
 
 ### 💖 THANK YOU FOR YOUR STARS!!
 
