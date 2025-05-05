@@ -993,7 +993,7 @@ def create_application_form(
         if not os.path.isfile(main_file_path):
             return templates.TemplateResponse(
                 "new_application.html", 
-                {"request": request, "error": "El archivo principal no existe", "form_data": locals()},
+                {"request": request, "error": "El archivo principal no existe", "form_data": locals(), "user": current_user},
                 status_code=400
             )
         
@@ -1001,7 +1001,7 @@ def create_application_form(
         if app_type.lower() not in ["flask", "fastapi", "django"]:
             return templates.TemplateResponse(
                 "new_application.html", 
-                {"request": request, "error": "Tipo de aplicación no válido. Debe ser 'flask' o 'fastapi'", "form_data": locals()},
+                {"request": request, "error": "Tipo de aplicación no válido. Debe ser 'flask' o 'fastapi'", "form_data": locals(), "user": current_user},
                 status_code=400
             )
         
@@ -1011,7 +1011,7 @@ def create_application_form(
             if not port:
                 return templates.TemplateResponse(
                     "new_application.html", 
-                    {"request": request, "error": "No se encontraron puertos disponibles", "form_data": locals()},
+                    {"request": request, "error": "No se encontraron puertos disponibles", "form_data": locals(), "user": current_user},
                     status_code=500
                 )
         
@@ -1040,7 +1040,7 @@ def create_application_form(
     except Exception as e:
         return templates.TemplateResponse(
             "new_application.html", 
-            {"request": request, "error": f"Error: {str(e)}", "form_data": locals()},
+            {"request": request, "error": f"Error: {str(e)}", "form_data": locals(), "user": current_user},
             status_code=500
         )
 
