@@ -21,8 +21,28 @@
         
         body {
             font-family: 'Poppins', sans-serif;
+            background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.1), transparent 40%),
+               radial-gradient(circle at bottom left, rgba(139, 92, 246, 0.05), transparent 30%),
+               #050715;
         }
         
+        .glass-effect {
+            backdrop-filter: blur(12px);
+            background: rgba(17, 24, 39, 0.65);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.36);
+        }
+
+        [data-lucide] {
+            transition: transform 0.2s ease;
+        }
+
+        /* Esto hace que el icono se anime cuando el PADRE recibe hover */
+        a:hover [data-lucide], 
+        button:hover [data-lucide],
+        .hover-trigger:hover [data-lucide] {
+            transform: scale(1.1);
+        }
         /* Scrollbar styles */
         ::-webkit-scrollbar {
             width: 10px;
@@ -124,6 +144,65 @@
             overflow-x: auto;
             color: #e2e8f0;
         }
+
+        h1 { 
+    font-size: 1.875rem; /* text-3xl */
+    font-weight: 700; /* font-bold */
+    margin-bottom: 0.5rem; /* mb-2 */
+}
+@media (min-width: 768px) {
+    h1 {
+        font-size: 2.25rem; /* md:text-4xl */
+    }
+}
+
+h2 { 
+    font-size: 1.5rem; /* text-2xl */
+    font-weight: 600; /* font-semibold */
+    margin-bottom: 0.5rem; /* mb-2 */
+}
+@media (min-width: 768px) {
+    h2 {
+        font-size: 1.875rem; /* md:text-3xl */
+    }
+}
+
+h3 { 
+    font-size: 1.25rem; /* text-xl */
+    font-weight: 500; /* font-medium */
+    margin-bottom: 0.25rem; /* mb-1 */
+}
+@media (min-width: 768px) {
+    h3 {
+        font-size: 1.5rem; /* md:text-2xl */
+    }
+}
+
+.text-caption { 
+    font-size: 0.75rem; /* text-xs */
+    color: #9ca3af; /* text-gray-400 */
+}
+
+.prose {
+    line-height: 1.625; /* leading-relaxed */
+}
+
+p {
+    margin-bottom: 1rem; /* mb-4 */
+}
+
+.w-16 a {
+    justify-content: center;
+}
+
+.logo-container {
+    transition: margin 0.3s ease;
+}
+
+/* Ajustar posición de logo cuando está colapsado */
+.w-16 .logo-container {
+    margin: 0 auto;
+}
     </style>
     {% block head %}{% endblock %}
 </head>
@@ -133,29 +212,31 @@
 
     <div class="flex h-screen overflow-hidden">
         <!-- Sidebar -->
-        <nav id="sidebar" class="w-64 bg-gray-900/50 border-r border-gray-800 h-full flex flex-col sidebar-transition overflow-y-auto">
+        <nav id="sidebar" class="w-64 glass-effect border-r border-gray-800/30 h-full flex flex-col sidebar-transition overflow-y-auto">
             <div class="p-4 border-b border-gray-800 flex items-center gap-3">
-                <div class="logo-icon">AS</div>
-                <h3 class="text-xl font-bold">AtlasServer</h3>
+                <div class="logo-container w-10 h-10 flex items-center justify-center bg-blue-600 rounded-lg">
+                    <img src="/static/svg/atlas.svg" alt="AtlasServer Logo" class="w-7 h-7" />
+                </div>
+                <h3 class="text-xl font-bold logo-text">AtlasServer</h3>
             </div>
 
             <div class="flex-1 py-4">
                 <ul class="space-y-2 px-2">
                     <li>
                         <a href="/" class="flex items-center gap-3 px-4 py-2 rounded-md hover:bg-white/5 transition-colors {% if request.url.path == '/' %}bg-blue-900/20 text-blue-400 border border-blue-900/30{% endif %}">
-                            <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                            <i data-lucide="layout-dashboard" class="w-5 h-5 icon-animated"></i>
                             <span>Dashboard</span>
                         </a>
                     </li>
                     <li>
                         <a href="/applications/new" class="flex items-center gap-3 px-4 py-2 rounded-md hover:bg-white/5 transition-colors {% if request.url.path == '/applications/new' %}bg-blue-900/20 text-blue-400 border border-blue-900/30{% endif %}">
-                            <i data-lucide="plus-circle" class="w-5 h-5"></i>
+                            <i data-lucide="plus-circle" class="w-5 h-5 icon-animated"></i>
                             <span>New App</span>
                         </a>
                     </li>
                     <li>
                         <a href="/config" class="flex items-center gap-3 px-4 py-2 rounded-md hover:bg-white/5 transition-colors {% if request.url.path == '/config' %}bg-blue-900/20 text-blue-400 border border-blue-900/30{% endif %}">
-                            <i data-lucide="settings" class="w-5 h-5"></i>
+                            <i data-lucide="settings" class="w-5 h-5 icon-animated"></i>
                             <span>Settings</span>
                         </a>
                     </li>
@@ -230,26 +311,70 @@
         
         // Sidebar toggle
         const sidebarCollapse = document.getElementById('sidebarCollapse');
-        const sidebar = document.getElementById('sidebar');
-        const content = document.getElementById('content');
-        
-        sidebarCollapse.addEventListener('click', function() {
-            const isCollapsed = sidebar.classList.contains('w-16');
-            
-            if (isCollapsed) {
-                sidebar.classList.remove('w-16');
-                sidebar.classList.add('w-64');
-            } else {
-                sidebar.classList.remove('w-64');
-                sidebar.classList.add('w-16');
+const sidebar = document.getElementById('sidebar');
+const content = document.getElementById('content');
+
+sidebarCollapse.addEventListener('click', function() {
+    const isCollapsed = sidebar.classList.contains('w-16');
+    
+    // 1. Cambiar ancho del sidebar
+    if (isCollapsed) {
+        sidebar.classList.remove('w-16');
+        sidebar.classList.add('w-64');
+    } else {
+        sidebar.classList.remove('w-64');
+        sidebar.classList.add('w-16');
+    }
+    
+    // 2. Ocultar SOLO los textos (no los iconos)
+    const sidebarTexts = sidebar.querySelectorAll('a span:not([data-lucide]), .border-t.border-gray-800 p, .p-4 h3');
+    sidebarTexts.forEach(item => {
+        item.classList.toggle('hidden');
+    });
+    
+    // 3. Ajustar los iconos y links cuando el sidebar está colapsado
+    const sidebarLinks = sidebar.querySelectorAll('a');
+    sidebarLinks.forEach(link => {
+        // Cuando está colapsado, centrar contenido
+        if (!isCollapsed) {
+            link.style.justifyContent = 'center';
+        } else {
+            link.style.justifyContent = '';
+        }
+    });
+    
+    // 4. Ajustar el logo cuando está colapsado
+    const logoContainer = sidebar.querySelector('.p-4 div.logo-icon');
+    if (logoContainer) {
+        if (!isCollapsed) {
+            logoContainer.style.margin = '0 auto';
+        } else {
+            logoContainer.style.margin = '';
+        }
+    }
+    
+    // 5. Preservar tamaño original de iconos
+    const icons = sidebar.querySelectorAll('[data-lucide]');
+    icons.forEach(icon => {
+        // Importante: Asegurarnos de que los iconos mantengan su tamaño
+        if (!isCollapsed) {
+            // Guardamos las clases originales para preservar tamaño
+            if (!icon.dataset.originalClasses) {
+                icon.dataset.originalClasses = icon.className;
             }
-            
-            // Toggle visibility of text in sidebar
-            const sidebarTexts = sidebar.querySelectorAll('a span, .sidebar-footer p');
-            sidebarTexts.forEach(item => {
-                item.classList.toggle('hidden');
-            });
-        });
+            // Aseguramos que tenga un tamaño mínimo
+            icon.style.minWidth = getComputedStyle(icon).width;
+            icon.style.minHeight = getComputedStyle(icon).height;
+        } else {
+            // Restauramos las clases originales al expandir
+            if (icon.dataset.originalClasses) {
+                icon.className = icon.dataset.originalClasses;
+            }
+            icon.style.minWidth = '';
+            icon.style.minHeight = '';
+        }
+    });
+});
     </script>
 
     <!-- Custom JavaScript -->

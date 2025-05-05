@@ -12,7 +12,7 @@
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <!-- Card 1: Total Apps -->
-        <div class="p-6 rounded-lg bg-gray-900/50 border border-gray-800 hover:border-gray-700 transition-all">
+        <div class="p-6 rounded-lg glass-effect hover:border-blue-700/30 transition-all duration-300 hover:translate-y-[-3px]">
             <div class="flex justify-between items-start">
                 <div>
                     <h2 class="text-3xl font-bold mb-1">{{ applications|length }}</h2>
@@ -25,7 +25,7 @@
         </div>
         
         <!-- Card 2: Running Apps -->
-        <div class="p-6 rounded-lg bg-gray-900/50 border border-gray-800 hover:border-gray-700 transition-all">
+        <div class="p-6 rounded-lg glass-effect hover:border-blue-700/30 transition-all duration-300 hover:translate-y-[-3px]">
             <div class="flex justify-between items-start">
                 <div>
                     <h2 class="text-3xl font-bold mb-1">{{ applications|selectattr('status', 'equalto', 'running')|list|length }}</h2>
@@ -38,7 +38,7 @@
         </div>
         
         <!-- Card 3: Stopped Apps -->
-        <div class="p-6 rounded-lg bg-gray-900/50 border border-gray-800 hover:border-gray-700 transition-all">
+        <div class="p-6 rounded-lg glass-effect hover:border-blue-700/30 transition-all duration-300 hover:translate-y-[-3px]">
             <div class="flex justify-between items-start">
                 <div>
                     <h2 class="text-3xl font-bold mb-1">{{ applications|selectattr('status', 'equalto', 'stopped')|list|length }}</h2>
@@ -51,7 +51,7 @@
         </div>
         
         <!-- Card 4: Error Apps -->
-        <div class="p-6 rounded-lg bg-gray-900/50 border border-gray-800 hover:border-gray-700 transition-all">
+        <div class="p-6 rounded-lg glass-effect hover:border-blue-700/30 transition-all duration-300 hover:translate-y-[-3px]">
             <div class="flex justify-between items-start">
                 <div>
                     <h2 class="text-3xl font-bold mb-1">{{ applications|selectattr('status', 'equalto', 'error')|list|length }}</h2>
