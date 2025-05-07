@@ -2,23 +2,18 @@
 # app/cli.py
 import click
 import os
-import sys
-import signal
 import subprocess
 import time
-import json
 import psutil
-from sqlalchemy.orm import Session
 
-# Ya no necesitamos agregar el path del proyecto, pues ahora estamos
-# dentro del paquete instalado
-# Importamos los módulos directamente
-
-# Importamos módulos del proyecto
 from app.process_manager import get_db, Application, ProcessManager
-from app.process_manager import engine
+from platformdirs import user_data_dir
 
-SERVER_PID_FILE = "atlas_server.pid"
+data_dir = user_data_dir("atlasserver", "AtlasServer-Core")
+os.makedirs(data_dir, exist_ok=True)
+
+# Definir la ruta completa del archivo PID
+SERVER_PID_FILE = os.path.join(data_dir, "atlas_server.pid")
 
 def get_server_pid():
     """Obtiene el PID del servidor si está en ejecución"""
@@ -69,7 +64,7 @@ def start_server(host, port, reload):
         start_new_session=True
     )
     
-    # Guardar PID
+    # Guardar PID en la ruta actualizada
     with open(SERVER_PID_FILE, "w") as f:
         f.write(str(process.pid))
     

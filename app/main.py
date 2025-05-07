@@ -27,7 +27,12 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Panel de Administración de Aplicaciones")
 
-NGROK_CONFIG_FILE = "ngrok_config.json"
+data_dir = user_data_dir("atlasserver", "AtlasServer-Core")
+os.makedirs(data_dir, exist_ok=True)
+
+# Definir la ruta completa del archivo de configuración de Ngrok
+NGROK_CONFIG_FILE = os.path.join(data_dir, "ngrok_config.json")
+
 
 package_dir = pathlib.Path(__file__).parent.absolute()
 static_dir = os.path.join(package_dir, "static")

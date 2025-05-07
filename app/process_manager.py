@@ -35,7 +35,7 @@ engine = create_engine(
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-NGROK_CONFIG_FILE = "ngrok_config.json"
+NGROK_CONFIG_FILE = os.path.join(data_dir, "ngrok_config.json")
 
 # Función para obtener la sesión de la base de datos
 def get_db():
