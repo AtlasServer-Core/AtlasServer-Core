@@ -33,7 +33,7 @@
 
   <p align="center">
     <img
-      src="https://atlasserver.vercel.app/static/img/panel-screenshot.png"
+      src="https://res.cloudinary.com/dmtomxyvm/image/upload/v1746656451/sprrvldk6kn4udtfuq3m.png"
       alt="AtlasServer Dashboard"
       width="80%"
     />
