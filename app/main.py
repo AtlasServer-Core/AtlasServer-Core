@@ -1,6 +1,8 @@
 #main.py
 
-from fastapi import FastAPI, Depends, HTTPException, Request, Form, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Depends, HTTPException, Request, Form, WebSocket, WebSocketDisconnect, status
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
@@ -25,10 +27,26 @@ import secrets
 # Crear las tablas en la base de datos
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Panel de Administración de Aplicaciones")
+app = FastAPI(title="Application Administration Panel", docs_url=None, redoc_url=None)
 
 data_dir = user_data_dir("atlasserver", "AtlasServer-Core")
 os.makedirs(data_dir, exist_ok=True)
+
+SWAGGER_CONFIG_FILE = os.path.join(data_dir, "swagger_config.json")
+
+def load_swagger_config():
+    if os.path.exists(SWAGGER_CONFIG_FILE):
+        try:
+            with open(SWAGGER_CONFIG_FILE, "r") as f:
+                return json.load(f)
+        except:
+            return {"enabled": False, "username": "", "password": "", "use_admin_credentials": False}
+    return {"enabled": False, "username": "", "password": "", "use_admin_credentials": False}
+
+def save_swagger_config(config):
+    with open(SWAGGER_CONFIG_FILE, "w") as f:
+        json.dump(config, f)
+
 
 # Definir la ruta completa del archivo de configuración de Ngrok
 NGROK_CONFIG_FILE = os.path.join(data_dir, "ngrok_config.json")
@@ -41,6 +59,8 @@ templates_dir = os.path.join(package_dir, "templates")
 # Configuración de plantillas y archivos estáticos
 templates = Jinja2Templates(directory=templates_dir)
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+security = HTTPBasic()
 
 # Modelos de Pydantic para validación
 class ApplicationCreate(BaseModel):
@@ -280,6 +300,136 @@ async def authenticate_middleware(request: Request, call_next):
         print(f"Error en middleware: {str(e)}")
         return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
 
+@app.get("/docs", include_in_schema=False)
+async def get_documentation(
+    request: Request,
+    credentials: HTTPBasicCredentials = Depends(security),
+    db: Session = Depends(get_db)
+):
+    # Cargar configuración de Swagger
+    swagger_config = load_swagger_config()
+    
+    if swagger_config.get("enabled", False):
+        if swagger_config.get("use_admin_credentials", False):
+            # Verificar contra credenciales de administrador
+            admin_user = db.query(User).filter(User.is_admin == True).first()
+            if admin_user:
+                # Verificar si las credenciales coinciden con las del administrador
+                is_username_correct = secrets.compare_digest(credentials.username, admin_user.username)
+                
+                # Para la contraseña, usamos la función de verificación segura
+                from .auth import verify_password
+                is_password_correct = admin_user and verify_password(credentials.password, admin_user.password)
+                
+                if not (is_username_correct and is_password_correct):
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="Credenciales incorrectas",
+                        headers={"WWW-Authenticate": "Basic"},
+                    )
+        else:
+            # Verificar contra credenciales configuradas
+            correct_username = swagger_config.get("username", "")
+            correct_password = swagger_config.get("password", "")
+            
+            is_username_correct = secrets.compare_digest(credentials.username, correct_username)
+            is_password_correct = secrets.compare_digest(credentials.password, correct_password)
+            
+            if not (is_username_correct and is_password_correct):
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Credenciales incorrectas",
+                    headers={"WWW-Authenticate": "Basic"},
+                )
+    
+    # Si llegamos aquí, la autenticación fue exitosa o no está habilitada
+    return get_swagger_ui_html(
+        openapi_url="/openapi.json",
+        title="AtlasServer - API Documentation"
+    )
+
+@app.get("/redoc", include_in_schema=False)
+async def get_redoc(
+    request: Request,
+    credentials: HTTPBasicCredentials = Depends(security),
+    db: Session = Depends(get_db)
+):
+    # Mismo código de verificación que en /docs
+    swagger_config = load_swagger_config()
+    
+    if swagger_config.get("enabled", False):
+        if swagger_config.get("use_admin_credentials", False):
+            # Verificar contra credenciales de administrador
+            admin_user = db.query(User).filter(User.is_admin == True).first()
+            if admin_user:
+                # Verificar si las credenciales coinciden con las del administrador
+                is_username_correct = secrets.compare_digest(credentials.username, admin_user.username)
+                
+                # Para la contraseña, usamos la función de verificación segura
+                from .auth import verify_password
+                is_password_correct = admin_user and verify_password(credentials.password, admin_user.password)
+                
+                if not (is_username_correct and is_password_correct):
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="Credenciales incorrectas",
+                        headers={"WWW-Authenticate": "Basic"},
+                    )
+        else:
+            # Verificar contra credenciales configuradas
+            correct_username = swagger_config.get("username", "")
+            correct_password = swagger_config.get("password", "")
+            
+            is_username_correct = secrets.compare_digest(credentials.username, correct_username)
+            is_password_correct = secrets.compare_digest(credentials.password, correct_password)
+            
+            if not (is_username_correct and is_password_correct):
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Credenciales incorrectas",
+                    headers={"WWW-Authenticate": "Basic"},
+                )
+    
+    return get_redoc_html(
+        openapi_url="/openapi.json",
+        title="AtlasServer - API Documentation"
+    )
+
+
+# En app/main.py - añadir después de la ruta para ngrok
+@app.post("/config/swagger")
+def save_swagger_auth_config(
+    request: Request,
+    swagger_enabled: bool = Form(False),
+    use_admin_credentials: bool = Form(False),
+    swagger_username: str = Form(""),
+    swagger_password: str = Form(""),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(login_required)
+):
+    # Verificar que el usuario actual es administrador
+    if not current_user.is_admin:
+        return RedirectResponse(url="/", status_code=303)
+    
+    # Cargar configuración actual
+    config = load_swagger_config()
+    
+    # Actualizar configuración
+    config["enabled"] = swagger_enabled
+    config["use_admin_credentials"] = use_admin_credentials
+    config["username"] = swagger_username if swagger_username else config.get("username", "")
+    
+    # Solo actualizar password si se proporciona uno nuevo
+    if swagger_password:
+        config["password"] = swagger_password
+    
+    # Guardar configuración
+    save_swagger_config(config)
+    
+    return RedirectResponse(
+        url="/config?swagger_success=The API documentation configuration has been saved successfully.", 
+        status_code=303
+    )
 
 @app.get("/api/applications", response_model=List[ApplicationResponse])
 def get_applications(db: Session = Depends(get_db), current_user: User = Depends(login_required)):
@@ -1133,29 +1283,7 @@ def delete_application_form(app_id: int, current_user: User = Depends(login_requ
     
     return RedirectResponse(url="/", status_code=303)
 
-@app.get("/config", response_class=HTMLResponse)
-def config_page(request: Request, current_user: User = Depends(login_required), db: Session = Depends(get_db)):
-    # Verificar que el usuario actual es administrador
-    if not current_user.is_admin:
-        return RedirectResponse(url="/", status_code=303)
-    
-    config = load_ngrok_config()
-    local_ip = get_local_ip()
-    server_port = 5000  # Puerto donde corre AtlasServer
-    
-    return templates.TemplateResponse(
-        "config.html",
-        {
-            "request": request, 
-            "user": current_user,
-            "ngrok_token": config.get("token", ""),
-            "local_ip": local_ip,
-            "server_port": server_port,
-            "success_message": request.query_params.get("success", None),
-            "user_success_message": request.query_params.get("user_success", None),
-            "registration_open": current_user.is_registration_open
-        }
-    )
+
 
 @app.post("/config/ngrok")
 def save_ngrok_token(
@@ -1319,16 +1447,19 @@ def save_user_config(
     current_user.is_registration_open = allow_registration
     db.commit()
     
-    return RedirectResponse(url="/config?user_success=La configuración de usuarios se ha guardado correctamente", status_code=303)
+    return RedirectResponse(url="/config?user_success=User settings have been saved successfully", status_code=303)
 
-# Actualizar la ruta de configuración existente para incluir opciones de usuario
+
 @app.get("/config", response_class=HTMLResponse)
 def config_page(request: Request, current_user: User = Depends(login_required), db: Session = Depends(get_db)):
     # Verificar que el usuario actual es administrador
     if not current_user.is_admin:
         return RedirectResponse(url="/", status_code=303)
     
-    config = load_ngrok_config()
+    # Cargar configuraciones
+    ngrok_config = load_ngrok_config()
+    swagger_config = load_swagger_config()
+    
     local_ip = get_local_ip()
     server_port = 5000  # Puerto donde corre AtlasServer
     
@@ -1336,12 +1467,19 @@ def config_page(request: Request, current_user: User = Depends(login_required), 
         "config.html",
         {
             "request": request, 
-            "ngrok_token": config.get("token", ""),
+            "user": current_user,
+            "ngrok_token": ngrok_config.get("token", ""),
             "local_ip": local_ip,
             "server_port": server_port,
             "success_message": request.query_params.get("success", None),
             "user_success_message": request.query_params.get("user_success", None),
-            "registration_open": current_user.is_registration_open
+            "swagger_success_message": request.query_params.get("swagger_success", None),
+            "registration_open": current_user.is_registration_open,
+            # Configuración de Swagger
+            "swagger_enabled": swagger_config.get("enabled", False),
+            "use_admin_credentials": swagger_config.get("use_admin_credentials", False),
+            "swagger_username": swagger_config.get("username", ""),
+            "swagger_password": swagger_config.get("password", ""),
         }
     )
 
