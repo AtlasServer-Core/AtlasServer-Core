@@ -3,4 +3,4 @@
 AtlasServer - Fast Deploy Manager for App Demo
 """
 
-__version__ = "0.1.3"
+__version__ = "0.1.4.1"
