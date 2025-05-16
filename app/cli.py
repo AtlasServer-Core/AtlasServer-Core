@@ -5,6 +5,7 @@ import os
 import subprocess
 import time
 import psutil
+import asyncio
 
 from app.process_manager import get_db, Application, ProcessManager
 from platformdirs import user_data_dir
@@ -288,6 +289,51 @@ def app_info(app_id):
                 click.echo(f"\n   ⚠️ PID exists but the process is not running")
     finally:
         db.close()
+
+
+@cli.group()
+def ai():
+    """AI-assisted commands for deployment."""
+    pass
+
+@ai.command("setup")
+@click.option("--provider", type=click.Choice(["ollama"]), default="ollama", 
+              help="AI provider (only ollama in Core)")
+@click.option("--model", default="qwen3:8b", help="Model to use (e.g.: qwen3:8b)")
+def ai_setup(provider, model):
+    """Configure the AI service for CLI."""
+    from app.ai.ai_cli import AtlasServerAICLI
+    ai_cli = AtlasServerAICLI()
+    success = ai_cli.setup(provider, model, None)
+    
+    if success:
+        click.echo(f"✅ AI configuration saved: {provider} / {model}")
+    else:
+        click.echo("❌ Error saving AI configuration")
+
+@ai.command("suggest")
+@click.argument("app_directory", type=click.Path(exists=True))
+def ai_suggest_command(app_directory):
+    """Suggest deployment commands for an application."""
+    try:
+        from app.ai.ai_cli import AtlasServerAICLI
+        ai_cli = AtlasServerAICLI()
+        result = asyncio.run(ai_cli.suggest_deployment_command(app_directory))
+        
+        click.echo("🤖 Project analysis completed")
+        click.echo(f"📂 Detected project type: {result['detected_type']}")
+        click.echo(f"🚀 Recommended command: {result['command']}")
+        
+        if result.get("environment_vars"):
+            click.echo("\n📋 Recommended environment variables:")
+            for key, value in result["environment_vars"].items():
+                click.echo(f"  {key}={value}")
+                
+        if click.confirm("Would you like to register this application with this configuration?"):
+            # Code to register the application would go here
+            click.echo("Automatic registration implementation pending.")
+    except Exception as e:
+        click.echo(f"❌ Error during analysis: {str(e)}")
 
 
 if __name__ == "__main__":
