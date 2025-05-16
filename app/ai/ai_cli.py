@@ -2,7 +2,7 @@
 import os
 import json
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Callable
 import re
 
 
@@ -39,8 +39,8 @@ class AtlasServerAICLI:
                     return json.load(f)
             except Exception as e:
                 logger.error(f"Error loading AI configuration: {str(e)}")
-                return {"provider": "ollama", "model": "codellama:7b"}
-        return {"provider": "ollama", "model": "codellama:7b"}
+                return {"provider": "ollama", "model": "qwen3:8b"}
+        return {"provider": "ollama", "model": "qwen3:8b"}
     
     def setup(self, provider: str, model: str, api_key: Optional[str] = None) -> bool:
         """Configure the AI service.
@@ -152,45 +152,17 @@ class AtlasServerAICLI:
         
         return info
     
-    def _parse_deployment_suggestion(self, response: str) -> Dict[str, Any]:
-        """Parse AI response and format it.
-        
-        Args:
-            response: AI service response
-            
-        Returns:
-            Structured deployment suggestion
-        """
-        try:
-            # Try to parse as JSON
-            data = json.loads(response)
-            return {
-                "detected_type": data.get("type", "Unknown"),
-                "command": data.get("command", ""),
-                "environment_vars": data.get("environment_vars", {}),
-                "port": data.get("port", "")
-            }
-        except json.JSONDecodeError:
-            # Fallback for when response is not JSON
-            detected_type_match = re.search(r"type of project[:\s]+([\w\s\.\-]+)", response, re.IGNORECASE)
-            command_match = re.search(r"command[:\s]+([\w\s\.\-]+)", response, re.IGNORECASE)
-            port_match = re.search(r"port[:\s]+(\d+)", response, re.IGNORECASE)
-            
-            return {
-                "detected_type": detected_type_match.group(1) if detected_type_match else "Unknown",
-                "command": command_match.group(1) if command_match else "",
-                "environment_vars": {},
-                "port": port_match.group(1) if port_match else ""
-            }
-    
-    async def suggest_deployment_command(self, directory: str) -> Dict[str, Any]:
+    async def suggest_deployment_command(self, directory: str, stream: bool = False, 
+                                     callback: Optional[Callable[[str], None]] = None) -> Dict[str, Any]:
         """Analyze a project and suggest the optimal deployment command.
         
         Args:
             directory: Project directory path
+            stream: Whether to stream the response
+            callback: Function to call with each chunk in streaming mode
             
         Returns:
-            Deployment suggestion
+            Deployment suggestion with detailed explanation
         """
         await self._ensure_ai_service()
         
@@ -213,23 +185,57 @@ class AtlasServerAICLI:
         Main files:
         {json.dumps([f["name"] for f in project_info["main_files"]])}
         
-        Please suggest:
+        Please provide a detailed analysis including:
         1. The project type (Flask, FastAPI, Django, Node, Express, Next.js, etc.)
         2. The exact command to deploy it
         3. Required environment variables
         4. Recommended port
+        5. DETAILED EXPLANATION of your reasoning and analysis
         
         Respond in JSON format with this structure:
         {{
             "type": "Project type",
             "command": "Deployment command",
             "environment_vars": {{"VAR1": "value1", "VAR2": "value2"}},
-            "port": "Recommended port"
+            "port": "Recommended port",
+            "reasoning": "Your detailed explanation of the analysis and recommendations"
         }}
         """
         
-        # Get AI response
-        response = await self.ai_service.generate_response(prompt, structured_output=True)
+        # Choose between streaming and regular response
+        if stream and callback:
+            raw_response = await self.ai_service.generate_response_stream(prompt, callback)
+        else:
+            raw_response = await self.ai_service.generate_response(prompt, structured_output=True)
         
         # Parse and format the response
-        return self._parse_deployment_suggestion(response)
+        return self._parse_deployment_suggestion(raw_response)
+        
+    def _parse_deployment_suggestion(self, response: str) -> Dict[str, Any]:
+        """Parse AI response and format it."""
+        try:
+            # Try to parse as JSON
+            data = json.loads(response)
+            return {
+                "detected_type": data.get("type", "Unknown"),
+                "command": data.get("command", ""),
+                "environment_vars": data.get("environment_vars", {}),
+                "port": data.get("port", ""),
+                "reasoning": data.get("reasoning", "No detailed explanation provided.")
+            }
+        except json.JSONDecodeError:
+            # Fallback for when response is not JSON
+            detected_type_match = re.search(r"type of project[:\s]+([\w\s\.\-]+)", response, re.IGNORECASE)
+            command_match = re.search(r"command[:\s]+([\w\s\.\-]+)", response, re.IGNORECASE)
+            port_match = re.search(r"port[:\s]+(\d+)", response, re.IGNORECASE)
+            
+            # Try to extract reasoning
+            reasoning_match = re.search(r"reasoning[:\s]+([\s\S]+?)(?=\n\n|\Z)", response, re.IGNORECASE)
+            
+            return {
+                "detected_type": detected_type_match.group(1) if detected_type_match else "Unknown",
+                "command": command_match.group(1) if command_match else "",
+                "environment_vars": {},
+                "port": port_match.group(1) if port_match else "",
+                "reasoning": reasoning_match.group(1).strip() if reasoning_match else response
+            }
