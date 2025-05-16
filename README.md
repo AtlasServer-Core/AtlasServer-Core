@@ -57,6 +57,7 @@
 - **App management**: Start, stop, and delete applications from the panel
 - **Command Line Interface**: Manage server and applications from the terminal
 - **Authentication**: Basic authentication system with limited roles
+- **AI-powered deployment**: Intelligent project analysis and deployment suggestions
 
 ---
 
@@ -92,6 +93,38 @@ atlasserver app start APP_ID   # Start an application
 atlasserver app stop APP_ID    # Stop an application
 atlasserver app restart APP_ID # Restart an application
 atlasserver app info APP_ID    # Show application details
+
+# AI-powered deployment
+atlasserver ai setup --model llama3:8b            # Configure AI model
+atlasserver ai suggest ~/path/to/your/project     # Get deployment suggestions
+atlasserver ai suggest ~/my-project --language es # Get suggestions in Spanish
+```
+
+### 🤖 AI-Powered Deployment
+
+AtlasServer includes intelligent project analysis to help you deploy apps more efficiently:
+
+- **Smart project detection**: Automatically identifies Flask, FastAPI, Django and other frameworks
+- **Contextual recommendations**: Suggests appropriate commands, ports, and environment variables
+- **Interactive exploration**: Analyzes project structure and key files
+- **Multilingual support**: Get explanations in English or Spanish
+
+**Requirements:**
+- [Ollama](https://github.com/ollama/ollama) for running local AI models
+
+**Setup:**
+```bash
+# Install and start Ollama
+ollama serve
+
+# Pull your preferred model
+ollama pull llama3:8b
+
+# Configure AtlasServer AI
+atlasserver ai setup --model llama3:8b
+
+# Analyze a project
+atlasserver ai suggest ~/path/to/your/project
 ```
 
 ### 🔧 Development Installation
