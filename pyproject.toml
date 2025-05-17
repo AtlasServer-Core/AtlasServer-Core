@@ -48,11 +48,6 @@ dependencies = [
     "gunicorn",
     "click>=8.0.0",
     "platformdirs",
-    "ollama",
-    "langchain",
-    "langchain-experimental",
-    "langchain-community",
-    "duckduckgo-search"
 ]
 
 [project.optional-dependencies]
