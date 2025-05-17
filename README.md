@@ -67,6 +67,9 @@
 # Install AtlasServer from PyPI
 pip install atlasserver
 
+# Optional: Install AI capabilities
+pip install atlasai-cli
+
 # Start the server
 atlasserver start
 
@@ -93,28 +96,51 @@ atlasserver app start APP_ID   # Start an application
 atlasserver app stop APP_ID    # Stop an application
 atlasserver app restart APP_ID # Restart an application
 atlasserver app info APP_ID    # Show application details
-
-# AI-powered deployment
-atlasserver ai setup --model llama3:8b            # Configure AI model
-atlasserver ai suggest ~/path/to/your/project     # Get deployment suggestions
-atlasserver ai suggest ~/my-project --language es # Get suggestions in Spanish
 ```
 
-### 🤖 AI-Powered Deployment
+#### Optional AI Commands (requires atlasai-cli)
 
-AtlasServer includes intelligent project analysis to help you deploy apps more efficiently:
+```bash
+# AI configuration
+atlasserver ai setup --model llama3:8b      # Configure with local Ollama model
+atlasserver ai setup --provider openai --model gpt-4.1 --api-key YOUR_KEY  # Use OpenAI
+
+# Project analysis
+atlasserver ai suggest ~/path/to/your/project     # Get deployment suggestions
+atlasserver ai suggest ~/my-project --language es # Get suggestions in Spanish
+
+# General AI queries
+atlasai --query "What files are in this project?"                     # Simple query
+atlasai --query "How can I deploy this Express app?" --language es    # Query in Spanish
+atlasai --query "Compare this project's dependencies with best practices"  # Complex analysis
+```
+
+### 🤖 AI-Powered Deployment (Optional)
+
+AtlasServer supports intelligent project analysis through the optional **AtlasAI-CLI** package:
 
 - **Smart project detection**: Automatically identifies Flask, FastAPI, Django and other frameworks
 - **Contextual recommendations**: Suggests appropriate commands, ports, and environment variables
 - **Interactive exploration**: Analyzes project structure and key files
 - **Multilingual support**: Get explanations in English or Spanish
+- **General AI queries**: Ask anything about your system, projects, or development needs
+
+**Installation:**
+```bash
+# Install the optional AI capabilities
+pip install atlasai-cli
+
+# Alternatively, install both AtlasServer and AI capabilities
+pip install atlasserver atlasai-cli
+```
 
 **Requirements:**
 - [Ollama](https://github.com/ollama/ollama) for running local AI models
+- Alternatively, OpenAI API for cloud-based models
 
 **Setup:**
 ```bash
-# Install and start Ollama
+# Install and start Ollama (for local models)
 ollama serve
 
 # Pull your preferred model
@@ -125,6 +151,9 @@ atlasserver ai setup --model llama3:8b
 
 # Analyze a project
 atlasserver ai suggest ~/path/to/your/project
+
+# Make a general query about your system or projects
+atlasai --query "What projects do I have here and how should I deploy them?"
 ```
 
 ### 🔧 Development Installation
