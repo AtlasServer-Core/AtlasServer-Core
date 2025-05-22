@@ -1,6 +1,6 @@
 #main.py
 
-from fastapi import FastAPI, Depends, HTTPException, Request, Form, WebSocket, WebSocketDisconnect, status
+from fastapi import FastAPI, Depends, HTTPException, Request, Form, status
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
 from fastapi.staticfiles import StaticFiles
@@ -22,7 +22,7 @@ from starlette import status
 from app.auth import authenticate_user, create_user, login_required, is_first_run, is_registration_open, get_current_user
 from app.db import engine, Base, get_db
 from app.models import User, Application, Log
-from app.process_manager import ProcessManager
+from app.services import ProcessManager
 from app.utils import get_local_ip, find_available_port, detect_environments
 import subprocess
 import sys
@@ -31,10 +31,12 @@ from platformdirs import user_data_dir
 from app.utils import get_local_ip
 import datetime
 from app.configs import load_ngrok_config, load_swagger_config, save_ngrok_config, save_swagger_config
+from app.routes import websockets
 # Crear las tablas en la base de datos
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Application Administration Panel", docs_url=None, redoc_url=None)
+app.include_router(websockets.router)
 
 data_dir = user_data_dir("atlasserver", "AtlasServer-Core")
 os.makedirs(data_dir, exist_ok=True)
@@ -48,125 +50,6 @@ templates = Jinja2Templates(directory=templates_dir)
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 security = HTTPBasic()
-
-async def tail_file(websocket: WebSocket, file_path: str, interval: float = 0.5):
-    """
-    Lee continuamente las nuevas líneas del archivo y las envía por WebSocket.
-    Versión mejorada con depuración.
-    """
-    print(f"⏳ Iniciando tail_file para {file_path}")
-    position = 0
-    
-    try:
-        # Enviar mensaje inicial para confirmar conexión
-        await websocket.send_json({
-            "timestamp": datetime.datetime.utcnow().isoformat(),
-            "line": "✓ Conexión establecida, monitoreando logs..."
-        })
-        
-        # Verificar si el archivo existe y establecer posición inicial
-        if os.path.exists(file_path):
-            position = os.path.getsize(file_path)
-            print(f"📄 Archivo encontrado, tamaño inicial: {position} bytes")
-            
-            # Enviar algunas líneas iniciales para verificar que funciona
-            try:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    # Leer las últimas 10 líneas aproximadamente
-                    last_pos = max(0, position - 2000)  # Leer ~2KB del final
-                    f.seek(last_pos)
-                    # Descartar la primera línea que podría estar incompleta
-                    if last_pos > 0:
-                        f.readline()
-                    # Obtener las últimas líneas
-                    last_lines = f.readlines()[-10:]
-                    
-                    for line in last_lines:
-                        line = line.rstrip('\n')
-                        if line:
-                            await websocket.send_json({
-                                "timestamp": datetime.datetime.utcnow().isoformat(),
-                                "line": f"[Histórico] {line}"
-                            })
-                    
-                    # Actualizar posición después de leer histórico
-                    position = os.path.getsize(file_path)
-            except Exception as e:
-                print(f"⚠️ Error al leer líneas históricas: {e}")
-        else:
-            print(f"⚠️ Archivo no existe: {file_path}")
-            await websocket.send_json({
-                "timestamp": datetime.datetime.utcnow().isoformat(),
-                "line": f"⚠️ El archivo de log no existe todavía: {os.path.basename(file_path)}"
-            })
-        
-        # Bucle principal de monitoreo
-        while True:
-            if os.path.exists(file_path):
-                try:
-                    current_size = os.path.getsize(file_path)
-                    
-                    # Si el archivo fue truncado
-                    if current_size < position:
-                        position = 0
-                        print(f"🔄 Archivo truncado, reiniciando desde el principio")
-                        await websocket.send_json({
-                            "timestamp": datetime.datetime.utcnow().isoformat(),
-                            "line": "🔄 Archivo de log truncado, reiniciando lectura..."
-                        })
-                    
-                    # Si hay nuevos datos
-                    if current_size > position:
-                        print(f"📝 Nuevos datos detectados: {current_size - position} bytes")
-                        
-                        # Leer usando open() estándar para evitar problemas con aiofiles
-                        with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
-                            f.seek(position)
-                            new_content = f.read(current_size - position)
-                        
-                        # Actualizar posición
-                        position = current_size
-                        
-                        # Procesar y enviar líneas
-                        lines = new_content.splitlines()
-                        if lines:
-                            print(f"📤 Enviando {len(lines)} líneas")
-                            
-                            for line in lines:
-                                if line.strip():
-                                    try:
-                                        await websocket.send_json({
-                                            "timestamp": datetime.datetime.utcnow().isoformat(),
-                                            "line": line
-                                        })
-                                    except Exception as e:
-                                        print(f"❌ Error al enviar: {str(e)}")
-                                        raise
-                except Exception as e:
-                    print(f"❌ Error procesando archivo: {str(e)}")
-                    import traceback
-                    traceback.print_exc()
-                    
-                    await websocket.send_json({
-                        "timestamp": datetime.datetime.utcnow().isoformat(),
-                        "line": f"❌ Error al leer el log: {str(e)}"
-                    })
-            
-            # Esperar antes de la siguiente verificación
-            await asyncio.sleep(interval)
-            
-    except WebSocketDisconnect:
-        print("👋 Cliente WebSocket desconectado")
-    except Exception as e:
-        print(f"💥 Error fatal en tail_file: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        
-        try:
-            await websocket.close(code=1011, reason=str(e))
-        except:
-            pass
-
 
 # Rutas API
 @app.middleware("http")
@@ -446,44 +329,6 @@ def download_application_output_logs(
         filename=filename,
         media_type="text/plain"
     )
-
-@app.websocket("/api/applications/{app_id}/stdout-logs/")
-async def api_stdout_logs(
-    websocket: WebSocket,
-    app_id: int,
-    db: Session = Depends(get_db)
-):
-    # Aceptar la conexión WebSocket
-    await websocket.accept()
-    # Validar existencia de la aplicación
-    application = db.query(Application).filter(Application.id == app_id).first()
-    if not application:
-        await websocket.close(code=1008, reason="Aplicación no encontrada")
-        return
-    # Ruta del archivo stdout.log
-    log_file = os.path.join(application.directory, "logs", "stdout.log")
-    if not os.path.exists(log_file):
-        await websocket.close(code=1008, reason="stdout.log no encontrado")
-        return
-    # Iniciar streaming del archivo
-    await tail_file(websocket, log_file)
-
-@app.websocket("/api/applications/{app_id}/stderr-logs/")
-async def api_stderr_logs(
-    websocket: WebSocket,
-    app_id: int,
-    db: Session = Depends(get_db)
-):
-    await websocket.accept()
-    application = db.query(Application).filter(Application.id == app_id).first()
-    if not application:
-        await websocket.close(code=1008, reason="Aplicación no encontrada")
-        return
-    log_file = os.path.join(application.directory, "logs", "stderr.log")
-    if not os.path.exists(log_file):
-        await websocket.close(code=1008, reason="stderr.log no encontrado")
-        return
-    await tail_file(websocket, log_file)
 
 @app.get("/api/detect-environments")
 def api_detect_environments(

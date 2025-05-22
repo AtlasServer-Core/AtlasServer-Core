@@ -7,7 +7,7 @@ import time
 import psutil
 from app.models import Application
 from app.db import get_db
-from app.process_manager import ProcessManager
+from app.services import ProcessManager
 from platformdirs import user_data_dir
 
 data_dir = user_data_dir("atlasserver", "AtlasServer-Core")
