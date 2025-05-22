@@ -5,10 +5,9 @@ import os
 import subprocess
 import time
 import psutil
-import asyncio
-import re
-import json
-from app.process_manager import get_db, Application, ProcessManager
+from app.models import Application
+from app.db import get_db
+from app.process_manager import ProcessManager
 from platformdirs import user_data_dir
 
 data_dir = user_data_dir("atlasserver", "AtlasServer-Core")

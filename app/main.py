@@ -17,13 +17,18 @@ import pathlib
 import asyncio
 from starlette.background import BackgroundTask
 import uvicorn
-from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional
 from starlette import status
-from .auth import authenticate_user, create_user, login_required, is_first_run, is_registration_open, get_current_user
-from .process_manager import *
+from app.auth import authenticate_user, create_user, login_required, is_first_run, is_registration_open, get_current_user
+from app.db import engine, Base, get_db
+from app.models import User, Application, Log
+from app.process_manager import ProcessManager, find_available_port, detect_environments
+import subprocess
+import sys
 import secrets
-
+from platformdirs import user_data_dir
+import socket
+import datetime
 # Crear las tablas en la base de datos
 Base.metadata.create_all(bind=engine)
 
@@ -62,38 +67,6 @@ app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 security = HTTPBasic()
 
-# Modelos de Pydantic para validación
-class ApplicationCreate(BaseModel):
-    name: str
-    directory: str
-    main_file: str
-    app_type: str
-    port: str | None = None
-    ngrok_enabled: bool | None = None
-
-class ApplicationUpdate(BaseModel):
-    name: Optional[str] = None
-    directory: Optional[str] = None
-    main_file: Optional[str] = None
-    app_type: Optional[str] = None
-    port: Optional[int] = None
-
-class LogResponse(BaseModel):
-    id: int
-    message: str
-    level: str
-    timestamp: str
-
-class ApplicationResponse(BaseModel):
-    id: int
-    name: str
-    directory: str
-    main_file: str
-    app_type: str
-    port: Optional[int]
-    status: str
-    created_at: str
-    logs: List[LogResponse] = []
 
 def get_local_ip():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
