@@ -22,13 +22,15 @@ from starlette import status
 from app.auth import authenticate_user, create_user, login_required, is_first_run, is_registration_open, get_current_user
 from app.db import engine, Base, get_db
 from app.models import User, Application, Log
-from app.process_manager import ProcessManager, find_available_port, detect_environments
+from app.process_manager import ProcessManager
+from app.utils import get_local_ip, find_available_port, detect_environments
 import subprocess
 import sys
 import secrets
 from platformdirs import user_data_dir
-import socket
+from app.utils import get_local_ip
 import datetime
+from app.configs import load_ngrok_config, load_swagger_config, save_ngrok_config, save_swagger_config
 # Crear las tablas en la base de datos
 Base.metadata.create_all(bind=engine)
 
@@ -36,26 +38,6 @@ app = FastAPI(title="Application Administration Panel", docs_url=None, redoc_url
 
 data_dir = user_data_dir("atlasserver", "AtlasServer-Core")
 os.makedirs(data_dir, exist_ok=True)
-
-SWAGGER_CONFIG_FILE = os.path.join(data_dir, "swagger_config.json")
-
-def load_swagger_config():
-    if os.path.exists(SWAGGER_CONFIG_FILE):
-        try:
-            with open(SWAGGER_CONFIG_FILE, "r") as f:
-                return json.load(f)
-        except:
-            return {"enabled": False, "username": "", "password": "", "use_admin_credentials": False}
-    return {"enabled": False, "username": "", "password": "", "use_admin_credentials": False}
-
-def save_swagger_config(config):
-    with open(SWAGGER_CONFIG_FILE, "w") as f:
-        json.dump(config, f)
-
-
-# Definir la ruta completa del archivo de configuración de Ngrok
-NGROK_CONFIG_FILE = os.path.join(data_dir, "ngrok_config.json")
-
 
 package_dir = pathlib.Path(__file__).parent.absolute()
 static_dir = os.path.join(package_dir, "static")
@@ -66,33 +48,6 @@ templates = Jinja2Templates(directory=templates_dir)
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 security = HTTPBasic()
-
-
-def get_local_ip():
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    try:
-        # No importa si realmente se conecta
-        s.connect(('10.255.255.255', 1))
-        local_ip = s.getsockname()[0]
-    except Exception:
-        local_ip = '127.0.0.1'
-    finally:
-        s.close()
-    return local_ip
-
-# Funciones para cargar y guardar la configuración de ngrok
-def load_ngrok_config():
-    if os.path.exists(NGROK_CONFIG_FILE):
-        try:
-            with open(NGROK_CONFIG_FILE, "r") as f:
-                return json.load(f)
-        except:
-            return {}
-    return {}
-
-def save_ngrok_config(config):
-    with open(NGROK_CONFIG_FILE, "w") as f:
-        json.dump(config, f)
 
 async def tail_file(websocket: WebSocket, file_path: str, interval: float = 0.5):
     """
