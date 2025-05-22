@@ -3,7 +3,8 @@ from fastapi import Depends, status, Request
 from fastapi.responses import RedirectResponse
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
-from .process_manager import User, get_db
+from app.models import User
+from app.db import get_db
 
 # Configuración para hasheo de contraseñas
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__rounds=12)

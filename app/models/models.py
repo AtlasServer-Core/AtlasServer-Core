@@ -3,7 +3,6 @@ from sqlalchemy.orm import relationship
 import datetime
 from app.db import Base
 from pydantic import BaseModel
-from typing import Optional, List
 
 class Application(Base):
     __tablename__ = "applications"
@@ -44,34 +43,8 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     is_registration_open = Column(Boolean, default=False)  # Control de registro
 
-class ApplicationCreate(BaseModel):
-    name: str
-    directory: str
-    main_file: str
-    app_type: str
-    port: str | None = None
-    ngrok_enabled: bool | None = None
-
-class ApplicationUpdate(BaseModel):
-    name: Optional[str] = None
-    directory: Optional[str] = None
-    main_file: Optional[str] = None
-    app_type: Optional[str] = None
-    port: Optional[int] = None
-
 class LogResponse(BaseModel):
     id: int
     message: str
     level: str
     timestamp: str
-
-class ApplicationResponse(BaseModel):
-    id: int
-    name: str
-    directory: str
-    main_file: str
-    app_type: str
-    port: Optional[int]
-    status: str
-    created_at: str
-    logs: List[LogResponse] = []
