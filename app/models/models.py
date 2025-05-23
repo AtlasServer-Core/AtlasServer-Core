@@ -42,9 +42,3 @@ class User(Base):
     is_admin = Column(Boolean, default=True)  # El primer usuario será admin
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     is_registration_open = Column(Boolean, default=False)  # Control de registro
-
-class LogResponse(BaseModel):
-    id: int
-    message: str
-    level: str
-    timestamp: str
