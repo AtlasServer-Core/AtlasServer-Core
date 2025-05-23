@@ -6,7 +6,7 @@ from app.db import get_db
 from app.models import Application
 from app.utils import tail_file
 
-router = APIRouter(prefix="/api/applications", tags=["applications"])
+router = APIRouter(prefix="/api/applications", tags=["websockets"])
 
 @router.websocket("/api/applications/{app_id}/stdout-logs/")
 async def api_stdout_logs(
