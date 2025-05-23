@@ -11,25 +11,25 @@ from sqlalchemy.orm import Session
 import os
 import pathlib
 import uvicorn
-from typing import Optional
 from starlette import status
 from app.auth import authenticate_user, create_user, login_required, is_first_run, is_registration_open, get_current_user
 from app.db import engine, Base, get_db
 from app.models import User, Application, Log
 from app.services import ProcessManager
-from app.utils import get_local_ip, find_available_port, detect_environments
+from app.utils import get_local_ip
 import sys
 import secrets
 from platformdirs import user_data_dir
 from app.utils import get_local_ip
 from app.configs import load_ngrok_config, load_swagger_config, save_ngrok_config, save_swagger_config
-from app.routes import websockets, api
+from app.routes import websockets, api, applications
 # Crear las tablas en la base de datos
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Application Administration Panel", docs_url=None, redoc_url=None)
 app.include_router(websockets.router)
 app.include_router(api.router)
+app.include_router(applications.router)
 
 data_dir = user_data_dir("atlasserver", "AtlasServer-Core")
 os.makedirs(data_dir, exist_ok=True)
@@ -242,7 +242,6 @@ def api_detect_environments(
 ):
     import os
     import sys
-    import glob
     import json
     import subprocess
     from pathlib import Path
@@ -557,97 +556,6 @@ def new_application_form(request: Request, current_user: User = Depends(login_re
     }
     return templates.TemplateResponse("new_application.html", {"request": request, "user": current_user, "environments": environments})
 
-@app.post("/applications/new")
-def create_application_form(
-    request: Request,
-    name: str = Form(...),
-    directory: str = Form(...),
-    main_file: str = Form(...),
-    app_type: str = Form(...),
-    port: Optional[str] = Form(None),
-    ngrok_enabled: bool = Form(False),  # Nuevo campo como checkbox
-    current_user: User = Depends(login_required),
-    environment_type: str = Form("system"),
-    db: Session = Depends(get_db)
-):
-    try:
-        # Validar que el directorio existe
-        if not os.path.isdir(directory):
-            return templates.TemplateResponse(
-                "new_application.html", 
-                {"request": request, "error": "El directorio no existe", "form_data": locals()},
-                status_code=400
-            )
-
-        env_type = "system"
-        env_path = None
-    
-        if environment_type != "system":
-            env_parts = environment_type.split(":", 1)
-            if len(env_parts) == 2:
-                env_type, env_name = env_parts
-            
-                # Obtener la ruta real del entorno
-                environments = detect_environments()
-                if environment_type in environments:
-                    env_path = environments[environment_type]["path"]
-        
-        # Validar que el archivo principal existe
-        main_file_path = os.path.join(directory, main_file)
-        if not os.path.isfile(main_file_path):
-            return templates.TemplateResponse(
-                "new_application.html", 
-                {"request": request, "error": "El archivo principal no existe", "form_data": locals(), "user": current_user},
-                status_code=400
-            )
-        
-        # Validar el tipo de aplicación
-        if app_type.lower() not in ["flask", "fastapi", "django"]:
-            return templates.TemplateResponse(
-                "new_application.html", 
-                {"request": request, "error": "Tipo de aplicación no válido. Debe ser 'flask' o 'fastapi'", "form_data": locals(), "user": current_user},
-                status_code=400
-            )
-        
-        # Asignar un puerto si no se proporciona
-        if not port:
-            port = find_available_port(db=db)
-            if not port:
-                return templates.TemplateResponse(
-                    "new_application.html", 
-                    {"request": request, "error": "No se encontraron puertos disponibles", "form_data": locals(), "user": current_user},
-                    status_code=500
-                )
-        
-        # Crear la aplicación en la base de datos
-        db_application = Application(
-            name=name,
-            directory=directory,
-            main_file=main_file,
-            app_type=app_type,
-            port=port,
-            ngrok_enabled=ngrok_enabled,
-            environment_type=env_type,
-            environment_path=env_path 
-        )
-        
-        db.add(db_application)
-        db.commit()
-        
-        # Añadir log de creación
-        log = Log(application_id=db_application.id, message="Aplicación creada", level="info")
-        db.add(log)
-        db.commit()
-        
-        return RedirectResponse(url="/", status_code=303)
-        
-    except Exception as e:
-        return templates.TemplateResponse(
-            "new_application.html", 
-            {"request": request, "error": f"Error: {str(e)}", "form_data": locals(), "user": current_user},
-            status_code=500
-        )
-
 @app.get("/applications/{app_id}", response_class=HTMLResponse)
 def view_application(app_id: int, request: Request, current_user: User = Depends(login_required), db: Session = Depends(get_db)):
     application = db.query(Application).filter(Application.id == app_id).first()
@@ -698,41 +606,6 @@ async def application_logs_page(
             "user": current_user
         }
     )
-
-@app.post("/applications/{app_id}/start")
-def start_application_form(app_id: int, current_user: User = Depends(login_required), db: Session = Depends(get_db)):
-    process_manager = ProcessManager(db)
-    process_manager.start_application(app_id)
-    return RedirectResponse(url=f"/applications/{app_id}", status_code=303)
-
-@app.post("/applications/{app_id}/stop")
-def stop_application_form(app_id: int, current_user: User = Depends(login_required), db: Session = Depends(get_db)):
-    process_manager = ProcessManager(db)
-    process_manager.stop_application(app_id)
-    return RedirectResponse(url=f"/applications/{app_id}", status_code=303)
-
-@app.post("/applications/{app_id}/restart")
-def restart_application_form(app_id: int, current_user: User = Depends(login_required), db: Session = Depends(get_db)):
-    process_manager = ProcessManager(db)
-    process_manager.restart_application(app_id)
-    return RedirectResponse(url=f"/applications/{app_id}", status_code=303)
-
-@app.post("/applications/{app_id}/delete")
-def delete_application_form(app_id: int, current_user: User = Depends(login_required), db: Session = Depends(get_db)):
-    db_application = db.query(Application).filter(Application.id == app_id).first()
-    if db_application:
-        # Detener la aplicación si está en ejecución
-        if db_application.status == "running":
-            process_manager = ProcessManager(db)
-            process_manager.stop_application(app_id)
-        
-        # Eliminar la aplicación
-        db.delete(db_application)
-        db.commit()
-    
-    return RedirectResponse(url="/", status_code=303)
-
-
 
 @app.post("/config/ngrok")
 def save_ngrok_token(
@@ -898,7 +771,6 @@ def save_user_config(
     
     return RedirectResponse(url="/config?user_success=User settings have been saved successfully", status_code=303)
 
-
 @app.get("/config", response_class=HTMLResponse)
 def config_page(request: Request, current_user: User = Depends(login_required), db: Session = Depends(get_db)):
     # Verificar que el usuario actual es administrador
@@ -940,8 +812,6 @@ app.add_middleware(
     session_cookie="atlasserver_session",
     max_age=60 * 60 * 24 * 7  # 7 días
 )
-
-
 
 if __name__ == "__main__":
     uvicorn.run("app.main:app", host="0.0.0.0", port=5000, reload=True)
