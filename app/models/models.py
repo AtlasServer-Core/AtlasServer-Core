@@ -2,7 +2,6 @@ from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 import datetime
 from app.db import Base
-from pydantic import BaseModel
 
 class Application(Base):
     __tablename__ = "applications"

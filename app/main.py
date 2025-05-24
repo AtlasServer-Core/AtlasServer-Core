@@ -1,5 +1,6 @@
 #main.py
 
+import logging
 from fastapi import FastAPI, Depends, HTTPException, Request, Form, status
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
@@ -7,6 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, RedirectResponse
 from starlette.middleware.sessions import SessionMiddleware
+from starlette.middleware import Middleware
 from sqlalchemy.orm import Session
 import os
 import pathlib
@@ -21,12 +23,36 @@ import sys
 import secrets
 from platformdirs import user_data_dir
 from app.utils import get_local_ip
-from app.configs import load_swagger_config
+from app.configs import load_swagger_config, get_or_refresh_token
 from app.routes import websockets, api, applications, configroutes, enviro
-# Crear las tablas en la base de datos
-Base.metadata.create_all(bind=engine)
+from contextlib import asynccontextmanager
 
-app = FastAPI(title="Application Administration Panel", docs_url=None, redoc_url=None)
+logger = logging.getLogger(__name__)
+
+secret = get_or_refresh_token()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 🟢 Código que se ejecuta al iniciar la app
+    logger.info("Iniciando la aplicación...")
+
+    # Crea las tablas si no existen (similar a startup)
+    Base.metadata.create_all(bind=engine)
+    yield  # Aquí empieza a recibir peticiones
+
+    # 🔴 Código que se ejecuta al apagar la app (similar a shutdown)
+    logger.info("Apagando la aplicación...")
+
+middleware = [
+    Middleware(
+        SessionMiddleware,
+        secret_key=secret,
+        session_cookie="atlasserver_session",
+        max_age=60 * 60 * 24 * 7
+    )
+]
+
+app = FastAPI(title="Application Administration Panel", docs_url=None, redoc_url=None, lifespan=lifespan, middleware=middleware)
 app.include_router(websockets.router)
 app.include_router(api.router)
 app.include_router(applications.router)
@@ -45,6 +71,7 @@ templates = Jinja2Templates(directory=templates_dir)
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 security = HTTPBasic()
+
 
 # Rutas API
 @app.middleware("http")
@@ -397,14 +424,6 @@ def logout(request: Request):
     
     return RedirectResponse(url="/login", status_code=303)
 
-# Se supone que si lo dejo aqui, funciona?
-# Ok, esto funciona si lo dejo aqui, es poco intuitivo pero funciona
-app.add_middleware(
-    SessionMiddleware,
-    secret_key=secrets.token_hex(32),  # Cambia esto a una clave segura en producción
-    session_cookie="atlasserver_session",
-    max_age=60 * 60 * 24 * 7  # 7 días
-)
 
 if __name__ == "__main__":
     uvicorn.run("app.main:app", host="0.0.0.0", port=5000, reload=True)

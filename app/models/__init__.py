@@ -1,1 +1,1 @@
-from .models import Application, Log, User, LogResponse
+from .models import Application, Log, User
