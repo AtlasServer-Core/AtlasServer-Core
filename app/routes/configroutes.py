@@ -1,5 +1,7 @@
 from fastapi import Depends, Request, Form, APIRouter
 from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.templating import Jinja2Templates
+import os
 from sqlalchemy.orm import Session
 from app.auth import login_required
 from app.db import get_db
@@ -7,7 +9,12 @@ from app.models import User
 from app.utils import get_local_ip
 from app.utils import get_local_ip
 from app.configs import load_ngrok_config, load_swagger_config, save_ngrok_config, save_swagger_config
-from app.main import templates
+from app.cli import package_dir
+
+templates_dir = os.path.join(package_dir, "templates")
+
+# Configuración de plantillas y archivos estáticos
+templates = Jinja2Templates(directory=templates_dir)
 
 router = APIRouter(prefix="/config", tags=["config"])
 

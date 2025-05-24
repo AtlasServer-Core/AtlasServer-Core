@@ -23,7 +23,8 @@ import sys
 import secrets
 from platformdirs import user_data_dir
 from app.utils import get_local_ip
-from app.configs import load_swagger_config, get_or_refresh_token
+from app.configs import load_swagger_config
+from app.auth import get_or_refresh_token
 from app.routes import websockets, api, applications, configroutes, enviro
 from contextlib import asynccontextmanager
 
@@ -31,28 +32,8 @@ logger = logging.getLogger(__name__)
 
 secret = get_or_refresh_token()
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # 🟢 Código que se ejecuta al iniciar la app
-    logger.info("Iniciando la aplicación...")
 
-    # Crea las tablas si no existen (similar a startup)
-    Base.metadata.create_all(bind=engine)
-    yield  # Aquí empieza a recibir peticiones
-
-    # 🔴 Código que se ejecuta al apagar la app (similar a shutdown)
-    logger.info("Apagando la aplicación...")
-
-middleware = [
-    Middleware(
-        SessionMiddleware,
-        secret_key=secret,
-        session_cookie="atlasserver_session",
-        max_age=60 * 60 * 24 * 7
-    )
-]
-
-app = FastAPI(title="Application Administration Panel", docs_url=None, redoc_url=None, lifespan=lifespan, middleware=middleware)
+app = FastAPI(title="Application Administration Panel", docs_url=None, redoc_url=None)
 app.include_router(websockets.router)
 app.include_router(api.router)
 app.include_router(applications.router)
@@ -423,6 +404,14 @@ def logout(request: Request):
     request.session.clear()
     
     return RedirectResponse(url="/login", status_code=303)
+
+
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=secret,  # Cambia esto a una clave segura en producción
+    session_cookie="atlasserver_session",
+    max_age=60 * 60 * 24 * 7  # 7 días
+)
 
 
 if __name__ == "__main__":
