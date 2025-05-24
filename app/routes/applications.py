@@ -9,7 +9,7 @@ from app.db import get_db
 from app.models import User, Application, Log
 from app.services import ProcessManager
 from app.utils import find_available_port, detect_environments
-from app.cli import package_dir
+from app.packdir import package_dir
 
 templates_dir = os.path.join(package_dir, "templates")
 

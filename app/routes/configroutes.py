@@ -9,7 +9,7 @@ from app.models import User
 from app.utils import get_local_ip
 from app.utils import get_local_ip
 from app.configs import load_ngrok_config, load_swagger_config, save_ngrok_config, save_swagger_config
-from app.cli import package_dir
+from app.packdir import package_dir
 
 templates_dir = os.path.join(package_dir, "templates")
 
