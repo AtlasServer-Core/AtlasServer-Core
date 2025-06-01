@@ -8,7 +8,7 @@ from app.utils import tail_file
 
 router = APIRouter(prefix="/api/applications", tags=["websockets"])
 
-@router.websocket("/api/applications/{app_id}/stdout-logs/")
+@router.websocket("/{app_id}/stdout-logs/")
 async def api_stdout_logs(
     websocket: WebSocket,
     app_id: int,
@@ -29,7 +29,7 @@ async def api_stdout_logs(
     # Iniciar streaming del archivo
     await tail_file(websocket, log_file)
 
-@router.websocket("/api/applications/{app_id}/stderr-logs/")
+@router.websocket("/{app_id}/stderr-logs/")
 async def api_stderr_logs(
     websocket: WebSocket,
     app_id: int,
