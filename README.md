@@ -30,7 +30,7 @@
     <a href="https://pypi.org/project/atlasserver/"><img src="https://img.shields.io/pypi/dm/atlasserver" alt="PyPI Downloads"></a>
     <a href="https://github.com/AtlasServer-Core/AtlasServer-Core/"><img src="https://img.shields.io/github/stars/AtlasServer-Core/AtlasServer-Core.svg" alt="GitHub Stars"></a>
     <a href="https://github.com/AtlasServer-Core/AtlasServer-Core/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" alt="License"></a>
-    <a href="https://github.com/AtlasServer-Core/AtlasServer-Core/"><img src="https://img.shields.io/endpoint?url=https://atlas-api-kl.onrender.com/stats/AtlasServer-Core/AtlasServer-Core/clones" alt="Clones"></a>
+    <a href="https://github.com/AtlasServer-Core/AtlasServer-Core/"><img src="https://img.shields.io/endpoint?url=https://git-echo.vercel.app/api/v1/gitecho/d0105a3f-aae8-479c-a772-96e5402e4bc3/AtlasServer-Core/AtlasServer-Core/clones" alt="Clones"></a>
   </p>
 
   <p align="center">
