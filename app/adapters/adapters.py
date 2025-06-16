@@ -4,9 +4,10 @@ from app.db import get_db
 class BaseAdapter:
     _registry = {}
 
-    def __init__(self, name, command, config):
+    def __init__(self, name, command_init, stop_command,  config):
         self.name = name
-        self.command = command
+        self.command_init = command_init
+        self.stop_command = stop_command
         self.config = config
         db_gen = get_db()
         db = next(db_gen)
@@ -20,7 +21,8 @@ class BaseAdapter:
         try:
             adapter = AtlasAdapter(
                 name=self.name,
-                command=self.command,
+                init_command=self.command_init,
+                stop_command=self.stop_command,
                 config=self.config
             )
 

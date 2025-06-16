@@ -9,6 +9,7 @@ import json
 from app.configs import NGROK_CONFIG_FILE
 from app.models import Application, Log
 from app.utils import find_available_port, check_port_available
+from .utils import is_base_app, get_adapter_commands
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -27,7 +28,7 @@ class ProcessManager:
         except Exception as e:
             print(f"Error al cargar la configuración de ngrok: {str(e)}")
         
-    def start_application(self, app_id: int, custom_fr: bool = False, app_type=None, custom_cm=None):
+    def start_application(self, app_id: int):
         application = self.db.query(Application).filter(Application.id == app_id).first()
         if not application:
             self._add_log(app_id, "Aplicación no encontrada", "error")
@@ -88,10 +89,9 @@ class ProcessManager:
                 # Ahora el comando usará el script de activación
                 cmd = [script_path]
                 python_cmd = "python"
-        if custom_fr:
-            pass
-
-        else:
+                
+        
+        if is_base_app(self.db, app_id):
             if application.app_type.lower() == "flask":
                 # Formato esperado: python -m waitress --port=8000 module:app
                 module_name = os.path.splitext(application.main_file)[0].replace("/", ".")
@@ -126,6 +126,9 @@ class ProcessManager:
             else:
                 self._add_log(app_id, f"Tipo de aplicación no soportado: {application.app_type}", "error")
                 return False
+        else:
+            init_cmd, _ = get_adapter_commands(self.db, application.app_type)
+            cmd = init_cmd
         
         self._add_log(app_id, f"Ejecutando comando: {' '.join(cmd)}", "info")
         self._add_log(app_id, f"En directorio: {cwd}", "info")
@@ -206,56 +209,47 @@ class ProcessManager:
         application = self.db.query(Application).filter(Application.id == app_id).first()
         if not application:
             return False
-        
+
         if application.status != "running" or not application.pid:
             application.status = "stopped"
+            self._cleanup_ngrok(app_id, application)
             self.db.commit()
             return True
-        
+
         try:
-            # Intenta terminar el proceso y todos sus hijos
-            parent = psutil.Process(application.pid)
-            children = parent.children(recursive=True)
-            
-            for child in children:
-                child.terminate()
-            
-            # Termina el proceso principal
-            parent.terminate()
-            
-            # Espera a que terminen los procesos
-            gone, alive = psutil.wait_procs(children + [parent], timeout=5)
-            
-            # Si alguno sigue vivo, lo mata forzosamente
-            for p in alive:
-                p.kill()
-            
+            if is_base_app(self.db, app_id):
+                parent = psutil.Process(application.pid)
+                children = parent.children(recursive=True)
+
+                for child in children:
+                    child.terminate()
+
+                parent.terminate()
+
+                gone, alive = psutil.wait_procs(children + [parent], timeout=5)
+                for p in alive:
+                    p.kill()
+
+            else:
+                _, stop_cmd = get_adapter_commands(self.db, application.app_type)
+                subprocess.run(stop_cmd, cwd=application.directory)
+
             application.status = "stopped"
             application.pid = None
+            self._cleanup_ngrok(app_id, application)
             self.db.commit()
 
-            if application.ngrok_url:
-                try:
-                    from pyngrok import ngrok
-                    # Extraer el puerto del túnel de la URL
-                    public_url = application.ngrok_url
-                    ngrok.disconnect(public_url)
-                    application.ngrok_url = None
-                    self._add_log(app_id, f"Túnel ngrok cerrado: {public_url}", "info")
-                except Exception as e:
-                    self._add_log(app_id, f"Error al cerrar túnel ngrok: {str(e)}", "warning")
-            
             self._add_log(app_id, "Aplicación detenida correctamente", "info")
             return True
-            
+
         except psutil.NoSuchProcess:
-            # El proceso ya no existe
             application.status = "stopped"
             application.pid = None
+            self._cleanup_ngrok(app_id, application)
             self.db.commit()
             self._add_log(app_id, "El proceso ya no existe", "warning")
             return True
-            
+
         except Exception as e:
             self._add_log(app_id, f"Error al detener la aplicación: {str(e)}", "error")
             return False
@@ -281,6 +275,17 @@ class ProcessManager:
             application.pid = None
             self._add_log(app_id, "El proceso ya no existe", "warning")
             self.db.commit()
+
+    def _cleanup_ngrok(self, app_id: int, application):
+        if application.ngrok_url:
+            try:
+                from pyngrok import ngrok
+                ngrok.disconnect(application.ngrok_url)
+                self._add_log(app_id, f"Túnel ngrok cerrado: {application.ngrok_url}", "info")
+            except Exception as e:
+                self._add_log(app_id, f"Error al cerrar túnel ngrok: {str(e)}", "warning")
+            finally:
+                application.ngrok_url = None
     
     def _add_log(self, app_id: int, message: str, level: str = "info"):
         log = Log(application_id=app_id, message=message, level=level)

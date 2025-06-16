@@ -11,9 +11,11 @@ class JavaAdapter(BaseAdapter):
 ## because errors may occur when trying to start it from the web dashboard
 
 ## MISUSE OF THE CLASS
-adapter = JavaAdapter("Spring", ["java", "-jar", "app.jar"], {"port": 8080})
+adapter = JavaAdapter(name="Spring", command_init=["java", "-jar", "app.jar"], stop_command=["java","-jar","app.jar","--stop"], config={"env": {"JAVA_OPTS": "-Xmx512m"}})
 
 ## GOOD USE OF THE CLASS
-adapter = JavaAdapter("Spring", ["java", "-jar"], {"port": 8080})
+## Ok I've noticed that making this more adaptable requires a few more things, 
+## for now we'll leave this as good use, but I need to add some logic so we can correctly specify everything needed.
+adapter = JavaAdapter(name="Spring", command_init=["java", "-jar"], stop_command=["java","-jar","app.jar","--stop"], config={"env": {"JAVA_OPTS": "-Xmx512m"}}) 
 
 adapter.register()

@@ -23,11 +23,12 @@ class Application(Base):
 
 class AtlasAdapter(Base):
     __tablename__ = "adapters"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    name    = Column(String, unique=True, index=True)
-    command = Column(JSON, nullable=False)      # JSON array
-    config  = Column(JSON, nullable=True)       # JSON object
+
+    id           = Column(Integer, primary_key=True, index=True)
+    name         = Column(String, unique=True, index=True, nullable=False)
+    init_command = Column(JSON, nullable=False)  # comando de start
+    stop_command = Column(JSON, nullable=False)  # comando de stop
+    config       = Column(JSON, nullable=True)   # objeto JSON
 
 class Log(Base):
     __tablename__ = "logs"

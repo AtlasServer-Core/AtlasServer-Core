@@ -10,6 +10,7 @@ from app.models import User, Application, Log
 from app.services import ProcessManager
 from app.utils import find_available_port, detect_environments
 from app.packdir import package_dir
+from app.adapters import BaseAdapter
 
 templates_dir = os.path.join(package_dir, "templates")
 
@@ -62,8 +63,11 @@ def create_application_form(
                 status_code=400
             )
         
-        # Validar el tipo de aplicación
-        if app_type.lower() not in ["flask", "fastapi", "django"]:
+        # Validar el tipo de aplicación}
+        app_validate = ["flask", "fastapi", "django"]
+        app_validate += [adapter.name.lower() for adapter in BaseAdapter.all()]
+
+        if app_type.lower() not in app_validate:
             return templates.TemplateResponse(
                 "new_application.html", 
                 {"request": request, "error": "Tipo de aplicación no válido. Debe ser 'flask' o 'fastapi'", "form_data": locals(), "user": current_user},
