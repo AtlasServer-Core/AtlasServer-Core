@@ -1,1 +1,1 @@
-from .models import Application, Log, User
+from .models import Application, Log, User, AtlasAdapter

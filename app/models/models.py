@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, JSON
 from sqlalchemy.orm import relationship
 import datetime
 from app.db import Base
@@ -20,6 +20,14 @@ class Application(Base):
     ngrok_url = Column(String, nullable=True)
     environment_type = Column(String, default="system")  # "system", "virtualenv", "conda"
     environment_path = Column(String, nullable=True)     # ruta al entorno virtual o nombre del entorno conda
+
+class AtlasAdapter(Base):
+    __tablename__ = "adapters"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name    = Column(String, unique=True, index=True)
+    command = Column(JSON, nullable=False)      # JSON array
+    config  = Column(JSON, nullable=True)       # JSON object
 
 class Log(Base):
     __tablename__ = "logs"

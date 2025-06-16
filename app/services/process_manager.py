@@ -27,7 +27,7 @@ class ProcessManager:
         except Exception as e:
             print(f"Error al cargar la configuración de ngrok: {str(e)}")
         
-    def start_application(self, app_id: int):
+    def start_application(self, app_id: int, custom_fr: bool = False, app_type=None, custom_cm=None):
         application = self.db.query(Application).filter(Application.id == app_id).first()
         if not application:
             self._add_log(app_id, "Aplicación no encontrada", "error")
@@ -88,41 +88,44 @@ class ProcessManager:
                 # Ahora el comando usará el script de activación
                 cmd = [script_path]
                 python_cmd = "python"
-        
-        if application.app_type.lower() == "flask":
-            # Formato esperado: python -m waitress --port=8000 module:app
-            module_name = os.path.splitext(application.main_file)[0].replace("/", ".")
-            if application.environment_type == "conda":
-                cmd.extend([python_cmd, "-m", "waitress", f"--port={application.port}", "--host=0.0.0.0", f"{module_name}:app"])
-            else:
-                cmd = [python_cmd, "-m", "waitress", f"--port={application.port}", "--host=0.0.0.0", f"{module_name}:app"]
-        elif application.app_type.lower() == "fastapi":
-            # Formato esperado: uvicorn module:app --port 8000
-            module_name = os.path.splitext(application.main_file)[0].replace("\\", ".").replace("/", ".")
-            if application.environment_type == "conda":
-                cmd.extend([python_cmd, "-m", "uvicorn", f"{module_name}:app", f"--port={application.port}", "--host=0.0.0.0"])
-            else:
-                cmd = [python_cmd, "-m", "uvicorn", f"{module_name}:app", f"--port={application.port}", "--host=0.0.0.0"]
+        if custom_fr:
+            pass
 
-        elif application.app_type.lower() == "django":
-            project_dirs = [d for d in os.listdir(application.directory) 
-                   if os.path.isdir(os.path.join(application.directory, d)) 
-                   and os.path.exists(os.path.join(application.directory, d, 'wsgi.py'))]
-
-            if not project_dirs:
-                self._add_log(app_id, "No se pudo detectar el módulo WSGI de Django", "error")
-                return False
-
-            project_name = project_dirs[0]
-            env["DJANGO_SETTINGS_MODULE"] = f"{project_name}.settings"
-
-            if application.environment_type == "conda":
-                cmd.extend([python_cmd, "-m", "gunicorn", f"{project_name}.wsgi:application", "--bind", f"0.0.0.0:{application.port}"])
-            else:
-                cmd = [python_cmd, "-m", "gunicorn", f"{project_name}.wsgi:application", "--bind", f"0.0.0.0:{application.port}"]
         else:
-            self._add_log(app_id, f"Tipo de aplicación no soportado: {application.app_type}", "error")
-            return False
+            if application.app_type.lower() == "flask":
+                # Formato esperado: python -m waitress --port=8000 module:app
+                module_name = os.path.splitext(application.main_file)[0].replace("/", ".")
+                if application.environment_type == "conda":
+                    cmd.extend([python_cmd, "-m", "waitress", f"--port={application.port}", "--host=0.0.0.0", f"{module_name}:app"])
+                else:
+                    cmd = [python_cmd, "-m", "waitress", f"--port={application.port}", "--host=0.0.0.0", f"{module_name}:app"]
+            elif application.app_type.lower() == "fastapi":
+                # Formato esperado: uvicorn module:app --port 8000
+                module_name = os.path.splitext(application.main_file)[0].replace("\\", ".").replace("/", ".")
+                if application.environment_type == "conda":
+                    cmd.extend([python_cmd, "-m", "uvicorn", f"{module_name}:app", f"--port={application.port}", "--host=0.0.0.0"])
+                else:
+                    cmd = [python_cmd, "-m", "uvicorn", f"{module_name}:app", f"--port={application.port}", "--host=0.0.0.0"]
+
+            elif application.app_type.lower() == "django":
+                project_dirs = [d for d in os.listdir(application.directory) 
+                    if os.path.isdir(os.path.join(application.directory, d)) 
+                    and os.path.exists(os.path.join(application.directory, d, 'wsgi.py'))]
+
+                if not project_dirs:
+                    self._add_log(app_id, "No se pudo detectar el módulo WSGI de Django", "error")
+                    return False
+
+                project_name = project_dirs[0]
+                env["DJANGO_SETTINGS_MODULE"] = f"{project_name}.settings"
+
+                if application.environment_type == "conda":
+                    cmd.extend([python_cmd, "-m", "gunicorn", f"{project_name}.wsgi:application", "--bind", f"0.0.0.0:{application.port}"])
+                else:
+                    cmd = [python_cmd, "-m", "gunicorn", f"{project_name}.wsgi:application", "--bind", f"0.0.0.0:{application.port}"]
+            else:
+                self._add_log(app_id, f"Tipo de aplicación no soportado: {application.app_type}", "error")
+                return False
         
         self._add_log(app_id, f"Ejecutando comando: {' '.join(cmd)}", "info")
         self._add_log(app_id, f"En directorio: {cwd}", "info")

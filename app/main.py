@@ -17,6 +17,8 @@ from starlette import status
 from app.auth import authenticate_user, create_user, login_required, is_first_run, is_registration_open, get_current_user
 from app.db import engine, Base, get_db
 from app.models import User, Application, Log
+from app.adapters import BaseAdapter
+from app.adapters import load_adapters_from_db
 from app.services import ProcessManager
 from app.utils import get_local_ip
 import sys
@@ -26,12 +28,11 @@ from app.utils import get_local_ip
 from app.configs import load_swagger_config
 from app.auth import get_or_refresh_token
 from app.routes import websockets, api, applications, configroutes, enviro
-from contextlib import asynccontextmanager
 
 logger = logging.getLogger(__name__)
 
 secret = get_or_refresh_token()
-
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Application Administration Panel", docs_url=None, redoc_url=None)
 app.include_router(websockets.router)
@@ -53,6 +54,11 @@ app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 security = HTTPBasic()
 
+load_adapters_from_db()
+
+# Mostrar qué se cargó
+for adapter in BaseAdapter.all():
+    print(f"[+] Adapter loaded: {adapter.name}")
 
 # Rutas API
 @app.middleware("http")
