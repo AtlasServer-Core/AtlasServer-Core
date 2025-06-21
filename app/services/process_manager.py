@@ -245,7 +245,19 @@ class ProcessManager:
                     port=application.port
                 )
 
-                subprocess.run(stop_cmd, cwd=application.directory)
+                import signal
+
+                if isinstance(stop_cmd, dict):
+                    if stop_cmd.get("signal_SIGINT") is True:
+                        try:
+                            os.kill(application.pid, signal.SIGINT)
+                            self._add_log(app_id, f"SIGINT enviado a PID {application.pid}", "info")
+                        except Exception as e:
+                            self._add_log(app_id, f"Error al enviar SIGINT: {e}", "error")
+                    else:
+                        self._add_log(app_id, f"Stop command dict no reconocido: {stop_cmd}", "error")
+                else:
+                    subprocess.run(stop_cmd, cwd=application.directory)
 
             application.status = "stopped"
             application.pid = None

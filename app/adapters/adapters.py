@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import Tuple, List, Optional
+from typing import Tuple, List, Optional, Union
 from app.models import AtlasAdapter
 from app.db import SessionLocal
 from sqlalchemy.exc import IntegrityError
@@ -11,7 +11,7 @@ class BaseAdapter(ABC):
         self,
         name: str,
         command_init_tpl: List[str],
-        stop_command_tpl: List[str],
+        stop_command_tpl: Union[List[str], dict],
         config: dict = None
     ):
         """
@@ -64,8 +64,13 @@ class BaseAdapter(ABC):
             "port": port if port is not None else ""
         }
 
-        def _expand(tpl: List[str]) -> List[str]:
-            return [s.format(**vars) for s in tpl]
+        def _expand(tpl):
+            if isinstance(tpl, list):
+                return [s.format(**vars) for s in tpl]
+            elif isinstance(tpl, dict):
+                return tpl
+            else:
+                raise TypeError(f"Unsupported command template type: {type(tpl)}")
 
         return _expand(self._cmd_init_tpl), _expand(self._cmd_stop_tpl)
 

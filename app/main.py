@@ -222,8 +222,10 @@ def read_root(request: Request, current_user: User = Depends(login_required), db
     return templates.TemplateResponse("index.html", {"request": request, "applications": applications, "user": current_user})
 
 @app.get("/applications/new", response_class=HTMLResponse)
-def new_application_form(request: Request, current_user: User = Depends(login_required)):
+def new_application_form(request: Request, current_user: User = Depends(login_required), db: Session = Depends(get_db)):
     # Ok toca iniciar esto asi, porque si no la ruta no funciona, ya buscare otra forma de iniciar correctamente
+    from app.models import AtlasAdapter
+
     environments = {
         "system": {
             "name": "Sistema (Global)",
@@ -231,7 +233,12 @@ def new_application_form(request: Request, current_user: User = Depends(login_re
             "type": "system"
         }
     }
-    return templates.TemplateResponse("new_application.html", {"request": request, "user": current_user, "environments": environments})
+
+    adapter_rows = db.query(AtlasAdapter).all()
+    adapters = [a.name for a in adapter_rows]  # Solo pasamos el nombre para usarse como app_type
+
+
+    return templates.TemplateResponse("new_application.html", {"request": request, "user": current_user, "environments": environments, "adapters": adapters})
 
 @app.get("/applications/{app_id}", response_class=HTMLResponse)
 def view_application(app_id: int, request: Request, current_user: User = Depends(login_required), db: Session = Depends(get_db)):

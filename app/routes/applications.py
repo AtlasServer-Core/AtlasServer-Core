@@ -55,17 +55,23 @@ def create_application_form(
                     env_path = environments[environment_type]["path"]
         
         # Validar que el archivo principal existe
-        main_file_path = os.path.join(directory, main_file)
-        if not os.path.isfile(main_file_path):
-            return templates.TemplateResponse(
-                "new_application.html", 
-                {"request": request, "error": "El archivo principal no existe", "form_data": locals(), "user": current_user},
-                status_code=400
-            )
+        if main_file == ".":
+            main_file = ""
+            pass
+        else:
+            main_file_path = os.path.join(directory, main_file)
+            if not os.path.isfile(main_file_path):
+                return templates.TemplateResponse(
+                    "new_application.html", 
+                    {"request": request, "error": "El archivo principal no existe", "form_data": locals(), "user": current_user},
+                    status_code=400
+                )
         
         # Validar el tipo de aplicación}
         app_validate = ["flask", "fastapi", "django"]
-        app_validate += [adapter.name.lower() for adapter in BaseAdapter.all()]
+        from app.models import AtlasAdapter
+        adapter_rows = db.query(AtlasAdapter).all()
+        app_validate += [adapter.name.lower() for adapter in adapter_rows]
 
         if app_type.lower() not in app_validate:
             return templates.TemplateResponse(

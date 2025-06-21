@@ -54,6 +54,11 @@
                                     <option value="flask" {% if form_data and form_data.app_type == 'flask' %}selected{% endif %}>Flask (Waitress)</option>
                                     <option value="fastapi" {% if form_data and form_data.app_type == 'fastapi' %}selected{% endif %}>FastAPI (Uvicorn)</option>
                                     <option value="django" {% if form_data and form_data.app_type == 'django' %}selected{% endif %}>Django (Gunicorn)</option>
+                                    {% for adapter in adapters %}
+                                        <option value="{{ adapter }}" {% if form_data and form_data.app_type == adapter %}selected{% endif %}>
+                                            {{ adapter }} (Adapter)
+                                        </option>
+                                    {% endfor %}
                                 </select>
                             </div>
                         </div>
