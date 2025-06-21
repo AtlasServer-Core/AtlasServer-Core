@@ -1,21 +1,16 @@
 from app.adapters import BaseAdapter
 
-class JavaAdapter(BaseAdapter):
-    def __init__(self, name, command, config):
-        super().__init__(name, command, config)
-
-    def register(self):
-        super().register()
-
-## PLEASE do not include the main file in the command to start the service, 
-## because errors may occur when trying to start it from the web dashboard
-
-## MISUSE OF THE CLASS
-adapter = JavaAdapter(name="Spring", command_init=["java", "-jar", "app.jar"], stop_command=["java","-jar","app.jar","--stop"], config={"env": {"JAVA_OPTS": "-Xmx512m"}})
-
-## GOOD USE OF THE CLASS
-## Ok I've noticed that making this more adaptable requires a few more things, 
-## for now we'll leave this as good use, but I need to add some logic so we can correctly specify everything needed.
-adapter = JavaAdapter(name="Spring", command_init=["java", "-jar"], stop_command=["java","-jar","app.jar","--stop"], config={"env": {"JAVA_OPTS": "-Xmx512m"}}) 
+adapter = BaseAdapter(
+    name="Spring",
+    command_init_tpl=[
+        "java", "-jar", "{main_file}", ## We use the "{main_file}" to specify where the path of the main file will be placed later when we want to launch the app, as well as with the host and port
+        "server.address={host}",
+        "server.port={port}"
+    ],
+    stop_command_tpl=[
+        "java", "-jar", "{main_file}", "--stop" ## Same here
+    ],
+    config={"env": {"JAVA_OPTS": "-Xmx512m"}}
+)
 
 adapter.register()

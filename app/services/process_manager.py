@@ -127,7 +127,13 @@ class ProcessManager:
                 self._add_log(app_id, f"Tipo de aplicación no soportado: {application.app_type}", "error")
                 return False
         else:
-            init_cmd, _ = get_adapter_commands(self.db, application.app_type)
+            init_cmd, stop_cmd = get_adapter_commands(
+                self.db,
+                application.app_type,
+                application.main_file,
+                host="0.0.0.0",
+                port=application.port
+            )
             cmd = init_cmd
         
         self._add_log(app_id, f"Ejecutando comando: {' '.join(cmd)}", "info")
@@ -231,7 +237,14 @@ class ProcessManager:
                     p.kill()
 
             else:
-                _, stop_cmd = get_adapter_commands(self.db, application.app_type)
+                _, stop_cmd = get_adapter_commands(
+                    self.db,
+                    application.app_type,
+                    application.main_file,
+                    host="0.0.0.0",
+                    port=application.port
+                )
+
                 subprocess.run(stop_cmd, cwd=application.directory)
 
             application.status = "stopped"

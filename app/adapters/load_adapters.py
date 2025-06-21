@@ -1,24 +1,30 @@
 from app.models import AtlasAdapter
 from app.db import get_db
-from app.adapters import BaseAdapter
 
-def load_adapters_from_db():
+def load_adapters_from_db() -> list[dict]:
     """
-    Lee todos los adapters de la BD usando get_db()
-    y los registra en BaseAdapter._registry.
+    Lee todos los adapters de la BD y devuelve una lista de dicts con:
+      - name
+      - init_command
+      - stop_command
+      - config
     """
     db_gen = get_db()
     db = next(db_gen)
     try:
         rows = db.query(AtlasAdapter).all()
+        adapters = []
         for row in rows:
-            BaseAdapter(
-                name=row.name,
-                command=row.command,
-                config=row.config
-            )
+            adapters.append({
+                "name": row.name,
+                "init_command": row.init_command,
+                "stop_command": row.stop_command,
+                "config": row.config
+            })
+        return adapters
+
     finally:
-        # cierra la sesión
+        # cierra la sesión de get_db()
         try:
             next(db_gen)
         except StopIteration:
