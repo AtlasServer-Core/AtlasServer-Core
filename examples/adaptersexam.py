@@ -26,8 +26,8 @@ adapter_js = BaseAdapter(
         "--port", "{port}"
     ],
     stop_command_tpl={
-        "signal_SIGINT": True ## This is an option I included for JS frameworks because they don't have a specific command, 
-        ## and this sends a signal like Ctrl + C that stops the process immediately. 
+        "signal_SIGINT": True ## This is an option I included for JS frameworks because they don't have a
+        ## specific command, and this sends a signal like Ctrl + C that stops the process immediately. 
         ##However, it's also compatible with any other framework that only stops with commands like Ctrl + C.
     },
 )
