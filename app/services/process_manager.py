@@ -9,7 +9,8 @@ import json
 from app.configs import NGROK_CONFIG_FILE
 from app.models import Application, Log
 from app.utils import find_available_port, check_port_available
-from .utils import is_base_app, get_adapter_commands
+from .utils import is_base_app, get_adapter_commands, kill_process_tree
+import signal
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -161,7 +162,40 @@ class ProcessManager:
             )
             
             # Actualizar el estado de la aplicación
-            application.pid = process.pid
+
+            import psutil
+            import time
+
+            time.sleep(0.1)
+
+            # Encuentra los hijos inmediatos
+            parent = psutil.Process(process.pid)
+            children = parent.children(recursive=False)
+
+            if not children:
+                # No hay wrapper, mantenemos el pid original
+                real_pid = process.pid
+            else:
+                if len(children) == 1:
+                    real_pid = children[0].pid
+                else:
+                    # Tratamos de emparejar por cmdline contra init_cmd (sin 'npx', 'sh', etc.)
+                    candidates = []
+                    ignore = {'npx', 'sh', 'bash', 'node'}
+                    for child in children:
+                        cmdline = child.cmdline()
+                    # buscamos si aparece alguno de los binaries de init_cmd
+                        if any(arg in cmdline for arg in init_cmd if arg not in ignore):
+                            candidates.append(child)
+                    if candidates:
+                        real_pid = candidates[0].pid
+                    else:
+                        # fallback: el primer hijo
+                        real_pid = children[0].pid
+
+                self._add_log(app_id, f"Reasignando PID de launcher {process.pid} → servidor real {real_pid}", "info")
+                application.pid = real_pid
+
             application.status = "running"
             self.db.commit()
             
@@ -245,15 +279,18 @@ class ProcessManager:
                     port=application.port
                 )
 
-                import signal
+                import psutil
 
                 if isinstance(stop_cmd, dict):
                     if stop_cmd.get("signal_SIGINT") is True:
                         try:
-                            os.kill(application.pid, signal.SIGINT)
-                            self._add_log(app_id, f"SIGINT enviado a PID {application.pid}", "info")
-                        except Exception as e:
-                            self._add_log(app_id, f"Error al enviar SIGINT: {e}", "error")
+                            success = kill_process_tree(application.pid, signal.SIGINT)
+                            if success:
+                                self._add_log(app_id, f"Proceso {application.pid} y sus hijos terminados con SIGINT", "info")
+                            else:
+                                self._add_log(app_id, f"No se encontró proceso con PID {application.pid}", "warning")
+                        except psutil.NoSuchProcess as e:
+                            print(f"Error {e}")     
                     else:
                         self._add_log(app_id, f"Stop command dict no reconocido: {stop_cmd}", "error")
                 else:

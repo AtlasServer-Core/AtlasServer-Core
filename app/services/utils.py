@@ -2,6 +2,12 @@ from sqlalchemy.orm import Session
 from app.models import Application, AtlasAdapter
 from app.adapters import BaseAdapter
 from typing import Optional, Tuple, List
+import os
+import psutil
+import signal
+
+import logging
+logger = logging.getLogger(__name__)
 
 BASE_APPS = {"flask", "fastapi", "django"}
 
@@ -47,3 +53,40 @@ def get_adapter_commands(
         host=host,
         port=port
     )
+
+
+
+def kill_process_tree(pid: int, sig: int = signal.SIGINT, timeout: float = 5.0) -> bool:
+    """
+    Envía `sig` al proceso `pid` y a todos sus hijos recursivamente.
+    - Primero intenta graceful (sig), espera `timeout` segundos.
+    - Luego fuerza con SIGKILL a los que queden vivos.
+    """
+    try:
+        parent = psutil.Process(pid)
+    except psutil.NoSuchProcess as e:
+        logger.error(f"Error: {e}")
+        return False
+
+    procs = [parent] + parent.children(recursive=True)
+
+    # 1) Graceful
+    for p in procs:
+        try:
+            os.kill(p.pid, sig)
+        except Exception as e:
+            logger.error(f"Error: {e}")
+            pass
+
+    # 2) Esperar
+    gone, alive = psutil.wait_procs(procs, timeout=timeout)
+
+    # 3) Forzar
+    for p in alive:
+        try:
+            os.kill(p.pid, signal.SIGKILL)
+        except Exception as e:
+            logger.error(f"Error: {e}")
+            pass
+
+    return True
